@@ -1,0 +1,32 @@
+name: Notify superproject
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch to superproject
+        env:
+          ORG_PAT: ${{ secrets.ORG_PAT }}
+          SUPERPROJECT: juling-go/juling-go
+          EVENT_TYPE: submodule-main-push
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          curl -sS --fail-with-body -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: token ${ORG_PAT}" \
+            "https://api.github.com/repos/${SUPERPROJECT}/dispatches" \
+            -d '{
+              "event_type": "'"${EVENT_TYPE}"'",
+              "client_payload": {
+                "source_repo": "'"${GITHUB_REPOSITORY}"'",
+                "source_ref": "'"${GITHUB_REF}"'",
+                "source_sha": "'"${GITHUB_SHA}"'"
+              }
+            }'
