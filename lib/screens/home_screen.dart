@@ -1,12 +1,13 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../models/curriculum.dart';
 import '../models/section.dart';
 import '../models/stage.dart';
 import '../services/section_service.dart';
+import 'content_screen.dart';
 import 'curriculum_screen.dart';
 import 'level_assessment_screen.dart';
-import 'problem_screen.dart';
 import 'profile_screen.dart';
-import 'settings_screen.dart';
+import 'stage_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,82 +17,176 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _sectionService = SectionService();
-  final ScrollController _scrollController = ScrollController();
-  Section? _section;
-  bool _isLoading = true;
-  int _currentStageIndex = 0;
+  // ── 탭 상태 ─────────────────────────────────────────────────
   int _selectedTabIndex = 0;
 
-  static const double _stageRowHeight = 120.0;
+  // ── 커리큘럼 상태 ─────────────────────────────────────────────
+  Curriculum? _activeCurriculum;
+  Set<String> _completedStageIds = {};
+
+  // 완료된 노드: 해당 노드의 모든 스테이지가 완료된 경우
+  Set<String> get _completedNodeIds {
+    if (_activeCurriculum == null) return {};
+    return _activeCurriculum!.nodes
+        .where((n) => n.stages.every((s) => _completedStageIds.contains(s.id)))
+        .map((n) => n.id)
+        .toSet();
+  }
+
+  // 현재 진행할 노드: 잠금 해제됐지만 완료되지 않은 첫 번째 노드
+  CurriculumNode? get _currentNode {
+    if (_activeCurriculum == null) return null;
+    final completed = _completedNodeIds;
+    for (final node in _activeCurriculum!.nodes) {
+      final isUnlocked =
+          node.prereqIds.isEmpty || node.prereqIds.every(completed.contains);
+      if (isUnlocked && !completed.contains(node.id)) return node;
+    }
+    return _activeCurriculum!.nodes.last;
+  }
+
+  // 현재 노드에서 진행할 스테이지 인덱스
+  int get _currentStageIndex {
+    final node = _currentNode;
+    if (node == null) return 0;
+    final idx =
+        node.stages.indexWhere((s) => !_completedStageIds.contains(s.id));
+    return idx < 0 ? node.stages.length - 1 : idx;
+  }
+
+  // ── 폴백 섹션 (커리큘럼 미선택 시) ───────────────────────────
+  final _sectionService = SectionService();
+  Section? _fallbackSection;
+  bool _fallbackLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadSection();
+    _loadFallbackSection();
   }
 
-  Future<void> _loadSection() async {
+  Future<void> _loadFallbackSection() async {
     try {
-      final section = await _sectionService.getSection();
-      final currentStage = section.stages.indexWhere((stage) => !stage.isCompleted);
+      final s = await _sectionService.getSection();
       setState(() {
-        _section = section;
-        _currentStageIndex = currentStage < 0 ? section.stages.length - 1 : currentStage;
-        _isLoading = false;
+        _fallbackSection = s;
+        _fallbackLoading = false;
       });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToCurrentStage();
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('섹션 데이터를 불러오는데 실패했습니다')),
-        );
-      }
+    } catch (_) {
+      setState(() => _fallbackLoading = false);
     }
   }
 
-  void _scrollToCurrentStage() {
-    if (!_scrollController.hasClients || _section == null) return;
-    final targetOffset = (_currentStageIndex * _stageRowHeight) - (MediaQuery.of(context).size.height / 4);
-    final clampOffset = targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent);
-    _scrollController.jumpTo(clampOffset);
-  }
-
-  void _onTabSelected(int index) {
+  // ── 콜백 ─────────────────────────────────────────────────────
+  void _onCurriculumSelected(Curriculum c) {
     setState(() {
-      _selectedTabIndex = index;
+      _activeCurriculum = c;
+      _completedStageIds = {};
     });
   }
 
-  void _onStageTap(int index) {
-    if (_section == null) return;
-    if (index > _currentStageIndex) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('먼저 이전 스테이지를 클리어하세요')),
-      );
-      return;
-    }
+  void _onTabSelected(int index) => setState(() => _selectedTabIndex = index);
 
-    final stage = _section!.stages[index];
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ProblemScreen(stage: stage)),
+  Future<void> _onStageTap(Stage stage, String nodeId) async {
+    await _showStagePopup(stage, nodeId);
+  }
+
+  Future<void> _showStagePopup(Stage stage, String nodeId) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 60),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(stage.title,
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text(stage.subtitle,
+                  style: const TextStyle(
+                      fontSize: 14, color: Colors.black54)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.access_time,
+                      size: 16, color: Colors.grey.shade500),
+                  const SizedBox(width: 6),
+                  Text('예상 시간: ${stage.estimatedMinutes}분',
+                      style: const TextStyle(
+                          fontSize: 13, color: Colors.black54)),
+                ],
+              ),
+              if (stage.learningObjective.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Text('학습 목표',
+                    style: TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(stage.learningObjective,
+                    style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                        height: 1.4)),
+              ],
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('닫기'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      final completed = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (_) => StageScreen(stage: stage),
+                        ),
+                      );
+                      if (completed == true && mounted) {
+                        setState(() {
+                          _completedStageIds.add(stage.id);
+                        });
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text('시작하기'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
+  // ── 빌드 ─────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final pages = [
-      _buildSectionView(),
-      const CurriculumScreen(),
+      _buildHomeView(),
+      CurriculumScreen(
+        activeCurriculum: _activeCurriculum,
+        completedNodeIds: _completedNodeIds,
+        onCurriculumSelected: _onCurriculumSelected,
+      ),
+      const ContentScreen(),
       const LevelAssessmentScreen(),
       const ProfileScreen(),
     ];
@@ -120,6 +215,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: '커리큘럼',
               ),
               BottomNavigationBarItem(
+                icon: Icon(Icons.menu_book_outlined),
+                activeIcon: Icon(Icons.menu_book),
+                label: '컨텐츠',
+              ),
+              BottomNavigationBarItem(
                 icon: Icon(Icons.assessment_outlined),
                 activeIcon: Icon(Icons.assessment),
                 label: '수준평가',
@@ -136,230 +236,312 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSectionView() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  // ── 홈 탭 전체 뷰 ────────────────────────────────────────────
 
-    if (_section == null) {
-      return const Center(child: Text('섹션 정보를 불러올 수 없습니다.'));
-    }
-
+  Widget _buildHomeView() {
     return Column(
       children: [
-        Container(
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24.0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${_section!.subject} > ${_section!.chapter} > ${_section!.sectionName}',
+        // 커리큘럼 배너 (진행 중일 때만 표시)
+        if (_activeCurriculum != null) _buildCurriculumBanner(),
+        // 섹션 정보 + 스테이지 목록
+        Expanded(child: _buildSectionBody()),
+      ],
+    );
+  }
+
+  Widget _buildCurriculumBanner() {
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTabIndex = 1),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        color: Colors.blue.shade600,
+        child: Row(
+          children: [
+            const Icon(Icons.school_outlined, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _activeCurriculum!.name,
                 style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _section!.description,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-            child: ScrollConfiguration(
-              behavior: _NoOverscrollBehavior(),
-              child: Scrollbar(
-                controller: _scrollController,
-                thumbVisibility: false,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _RoadmapPainter(stageCount: _section!.stages.length),
-                      ),
-                    ),
-                    SingleChildScrollView(
-                      controller: _scrollController,
-                      child: Column(
-                        children: List.generate(_section!.stages.length, (index) {
-                          final stage = _section!.stages[index];
-                          final isLocked = index > _currentStageIndex;
-                          final isCurrent = index == _currentStageIndex;
-                          return _buildStageRow(stage, index, isCurrent, isLocked);
-                        }),
-                      ),
-                    ),
-                  ],
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
+            const Icon(Icons.chevron_right, color: Colors.white70, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionBody() {
+    // 커리큘럼 진행 중
+    if (_activeCurriculum != null) {
+      final node = _currentNode;
+      if (node == null) {
+        return const Center(child: Text('모든 섹션을 완료했습니다! 🎉'));
+      }
+      return _buildSectionFromNode(node);
+    }
+
+    // 폴백 (커리큘럼 미선택)
+    if (_fallbackLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_fallbackSection == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('커리큘럼을 선택하면 학습을 시작할 수 있습니다.',
+                style: TextStyle(color: Colors.black54)),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () => setState(() => _selectedTabIndex = 1),
+              child: const Text('커리큘럼 선택하기'),
+            ),
+          ],
+        ),
+      );
+    }
+    return _buildSectionFromFallback(_fallbackSection!);
+  }
+
+  // ── 커리큘럼 기반 섹션 뷰 ─────────────────────────────────────
+
+  Widget _buildSectionFromNode(CurriculumNode node) {
+    final currentIdx = _currentStageIndex;
+    return Column(
+      children: [
+        _buildSectionInfoCard(
+          subject: node.subject,
+          chapter: node.chapter,
+          sectionName: node.title,
+          description: node.description,
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            itemCount: node.stages.length,
+            itemBuilder: (context, index) {
+              final stage = node.stages[index];
+              final isCompleted = _completedStageIds.contains(stage.id);
+              final isCurrent = !isCompleted && index == currentIdx;
+              final isLocked = !isCompleted && index > currentIdx;
+              return _buildStageCard(
+                stage: stage,
+                index: index,
+                isCompleted: isCompleted,
+                isCurrent: isCurrent,
+                isLocked: isLocked,
+                onTap: isLocked
+                    ? () => ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('이전 스테이지를 먼저 완료하세요.')),
+                        )
+                    : () => _onStageTap(stage, node.id),
+              );
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStageRow(Stage stage, int index, bool isCurrent, bool isLocked) {
-    final color = isLocked
-        ? Colors.grey.shade300
+  // ── 폴백 섹션 뷰 ─────────────────────────────────────────────
+
+  Widget _buildSectionFromFallback(Section section) {
+    final currentIdx =
+        section.stages.indexWhere((s) => !s.isCompleted);
+    final effectiveCurrent =
+        currentIdx < 0 ? section.stages.length - 1 : currentIdx;
+
+    return Column(
+      children: [
+        _buildSectionInfoCard(
+          subject: section.subject,
+          chapter: section.chapter,
+          sectionName: section.sectionName,
+          description: section.description,
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            itemCount: section.stages.length,
+            itemBuilder: (context, index) {
+              final stage = section.stages[index];
+              return _buildStageCard(
+                stage: stage,
+                index: index,
+                isCompleted: stage.isCompleted,
+                isCurrent: index == effectiveCurrent && !stage.isCompleted,
+                isLocked: index > effectiveCurrent,
+                onTap: index > effectiveCurrent
+                    ? () => ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('이전 스테이지를 먼저 완료하세요.')),
+                        )
+                    : () => _onStageTap(stage, ''),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── 공통 위젯 ────────────────────────────────────────────────
+
+  Widget _buildSectionInfoCard({
+    required String subject,
+    required String chapter,
+    required String sectionName,
+    required String description,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+            BorderRadius.vertical(bottom: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black12, blurRadius: 10, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$subject  >  $chapter',
+            style: const TextStyle(fontSize: 12, color: Colors.black45),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            sectionName,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: const TextStyle(
+                fontSize: 13, color: Colors.black54, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStageCard({
+    required Stage stage,
+    required int index,
+    required bool isCompleted,
+    required bool isCurrent,
+    required bool isLocked,
+    required VoidCallback onTap,
+  }) {
+    final Color dotColor = isCompleted
+        ? Colors.green
         : isCurrent
             ? Colors.blue
-            : Colors.green;
+            : Colors.grey.shade300;
+
+    final Color borderColor = isCompleted
+        ? Colors.green.shade100
+        : isCurrent
+            ? Colors.blue.shade100
+            : Colors.grey.shade200;
+
+    final Color bgColor = isLocked ? Colors.grey.shade50 : Colors.white;
 
     return GestureDetector(
-      onTap: () => _onStageTap(index),
+      onTap: onTap,
       child: Container(
-        height: _stageRowHeight,
-        margin: const EdgeInsets.only(bottom: 16.0),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor, width: 1.5),
+          boxShadow: isLocked
+              ? null
+              : const [
+                  BoxShadow(
+                    color: Color.fromRGBO(0, 0, 0, 0.05),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+        ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SizedBox(
-              width: 80,
+            // 상태 원형 표시
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
               child: Center(
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color.fromRGBO(0, 0, 0, 0.1),
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(
-                        color: isLocked ? Colors.black45 : Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
+                child: isCompleted
+                    ? const Icon(Icons.check_rounded,
+                        color: Colors.white, size: 20)
+                    : isLocked
+                        ? Icon(Icons.lock_outline,
+                            color: Colors.grey.shade400, size: 18)
+                        : Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15),
+                          ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                decoration: BoxDecoration(
-                  color: isLocked ? Colors.grey.shade100 : Colors.white,
-                  borderRadius: BorderRadius.circular(16.0),
-                  border: Border.all(
-                    color: isLocked ? Colors.grey.shade200 : Colors.grey.shade300,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    stage.title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: isLocked ? Colors.black38 : Colors.black87,
+                    ),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      stage.title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isLocked ? Colors.black45 : Colors.black,
-                      ),
+                  const SizedBox(height: 3),
+                  Text(
+                    stage.subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isLocked ? Colors.black26 : Colors.black45,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      stage.subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isLocked ? Colors.black38 : Colors.black54,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      isLocked
-                          ? '잠금 상태: 이전 스테이지 완료 후 오픈'
-                          : isCurrent
-                              ? '현재 학습 중인 스테이지'
-                              : '완료된 스테이지',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isLocked ? Colors.black38 : Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
+            if (!isLocked) ...[
+              const SizedBox(width: 8),
+              Icon(
+                isCompleted ? Icons.replay_outlined : Icons.play_circle_outline,
+                color: isCompleted
+                    ? Colors.green.shade400
+                    : Colors.blue.shade400,
+                size: 22,
+              ),
+            ],
           ],
         ),
       ),
     );
-  }
-}
-
-class _RoadmapPainter extends CustomPainter {
-  final int stageCount;
-
-  _RoadmapPainter({required this.stageCount});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.blue.shade200
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path();
-    const centerX = 50.0;
-    const startY = 40.0;
-    const stepY = _HomeScreenState._stageRowHeight;
-
-    path.moveTo(centerX, startY);
-    for (var i = 0; i < stageCount; i++) {
-      final currentY = startY + i * stepY;
-      final controlX = centerX + (i.isEven ? 40 : -40);
-      final controlY = currentY - 20;
-      path.quadraticBezierTo(controlX, controlY, centerX, currentY + 20);
-    }
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RoadmapPainter oldDelegate) {
-    return oldDelegate.stageCount != stageCount;
-  }
-}
-
-class _NoOverscrollBehavior extends ScrollBehavior {
-  @override
-  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
-    return child;
-  }
-
-  @override
-  ScrollPhysics getScrollPhysics(BuildContext context) {
-    return const ClampingScrollPhysics();
   }
 }
