@@ -1,37 +1,21 @@
 import 'package:flutter/material.dart';
 import '../models/curriculum.dart';
 import '../services/curriculum_service.dart';
-import '../theme/app_decorations.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
+import '../theme/app_theme.dart';
 
-const _kNodeRadius = 36.0;
-const _kLevelHeight = 150.0;
-const _kLabelExtra = 14.0;
-const _kTopPad = 24.0;
-
-/// 과목명에서 일관된 강조 색상을 반환합니다.
-Color _subjectAccent(String subject) {
-  const palette = [
-    Color(0xFF64B5F6), // 파란 계열 — 주식
-    Color(0xFF81C784), // 초록 계열 — 경제
-    Color(0xFFFFB74D), // 앰버 계열 — 투자
-    Color(0xFFBA68C8), // 보라 계열
-    Color(0xFF4DD0E1), // 청록 계열
-    Color(0xFFFF8A65), // 주황 계열
-    Color(0xFFF06292), // 분홍 계열
-    Color(0xFF9575CD), // 진보라 계열
-  ];
-  int hash = 0;
-  for (final r in subject.runes) {
-    hash = (hash * 31 + r) & 0x7FFFFFFF;
-  }
-  return palette[hash % palette.length];
-}
+const _kNodeRadius  = AppSpacing.graphNodeRadius;
+const _kLevelHeight = AppSpacing.graphLevelHeight;
+const _kLabelExtra  = AppSpacing.graphLabelExtra;
+const _kTopPad      = AppSpacing.graphTopPad;
 
 class CurriculumScreen extends StatefulWidget {
   final Curriculum? activeCurriculum;
   final Set<String> completedNodeIds;
   final void Function(Curriculum) onCurriculumSelected;
-  final VoidCallback? onNavigateToHome;
+  final void Function(Curriculum, CurriculumNode)? onNodeTap;
   final CurriculumService service;
 
   const CurriculumScreen({
@@ -39,7 +23,7 @@ class CurriculumScreen extends StatefulWidget {
     required this.activeCurriculum,
     required this.completedNodeIds,
     required this.onCurriculumSelected,
-    this.onNavigateToHome,
+    this.onNodeTap,
     this.service = const MockCurriculumService(),
   });
 
@@ -94,11 +78,8 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
         completedNodeIds: widget.completedNodeIds,
         isActive: widget.activeCurriculum?.id == _viewing!.id,
         onBack: () => setState(() => _viewing = null),
-        onStart: () {
-          _selectCurriculum(_viewing!);
-          widget.onNavigateToHome?.call();
-        },
-        onNavigateToHome: widget.onNavigateToHome,
+        onStart: () => _selectCurriculum(_viewing!),
+        onSectionTap: (node) => widget.onNodeTap?.call(_viewing!, node),
       );
     }
     return _buildSelectionView();
@@ -117,14 +98,13 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
         else
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: _curriculums.length,
               itemBuilder: (context, index) => _CurriculumCard(
                 curriculum: _curriculums[index],
                 isActive:
                     widget.activeCurriculum?.id == _curriculums[index].id,
-                onTap: () =>
-                    setState(() => _viewing = _curriculums[index]),
+                onTap: () => setState(() => _viewing = _curriculums[index]),
               ),
             ),
           ),
@@ -135,31 +115,26 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s20, AppSpacing.s20, AppSpacing.s20, AppSpacing.md),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF232323), Color(0xFF161616)],
-        ),
+        gradient: AppColors.gradHeader,
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.55),
-              blurRadius: 12,
+              blurRadius: AppSpacing.s12,
               offset: const Offset(0, 5)),
           const BoxShadow(
-              color: Color(0xFF3A3A3A),
-              blurRadius: 4,
+              color: AppColors.borderHighlightDim,
+              blurRadius: AppSpacing.xs,
               offset: Offset(-1, -1)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('커리큘럼',
-              style:
-                  TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
+          const Text('커리큘럼', style: AppTextStyles.displayMedium),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             widget.activeCurriculum != null
                 ? '진행 중: ${widget.activeCurriculum!.name}'
@@ -167,8 +142,8 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
             style: TextStyle(
               fontSize: 13,
               color: widget.activeCurriculum != null
-                  ? Colors.blue.shade400
-                  : const Color(0xFF9E9E9E),
+                  ? AppColors.blue400
+                  : AppColors.textSecondary,
             ),
           ),
         ],
@@ -195,13 +170,11 @@ class _CurriculumCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(18),
+        margin: const EdgeInsets.only(bottom: AppSpacing.s14),
+        padding: const EdgeInsets.all(AppSpacing.s18),
         decoration: card3D(
           border: Border.all(
-            color: isActive
-                ? Colors.blue.shade500
-                : Colors.transparent,
+            color: isActive ? AppColors.blue : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -216,61 +189,55 @@ class _CurriculumCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           curriculum.name,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTextStyles.headingSmall,
                         ),
                       ),
                       if (isActive)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                              horizontal: AppSpacing.sm, vertical: AppSpacing.s3),
                           decoration: BoxDecoration(
-                            color: Colors.blue.shade900,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                color: Colors.blue.shade700, width: 1),
+                            color: AppColors.blue900,
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.rSm),
+                            border:
+                                Border.all(color: AppColors.blue700),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    Colors.blue.withValues(alpha: 0.25),
-                                blurRadius: 6,
+                                color: AppColors.blue.withValues(alpha: 0.25),
+                                blurRadius: AppSpacing.s6,
                               ),
                             ],
                           ),
-                          child: Text(
+                          child: const Text(
                             '진행 중',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.blue.shade300,
+                              color: AppColors.blue300,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.s6),
                   Text(
                     curriculum.description,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF9E9E9E),
-                        height: 1.4),
+                    style: AppTextStyles.bodySmallMuted,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppSpacing.s10),
                   Text(
                     '섹션 ${curriculum.nodes.length}개',
-                    style:
-                        TextStyle(fontSize: 12, color: Colors.blue.shade400),
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.blue400),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: Color(0xFF686868)),
+            const SizedBox(width: AppSpacing.sm),
+            const Icon(Icons.chevron_right, color: AppColors.textDimmed),
           ],
         ),
       ),
@@ -286,7 +253,7 @@ class _CurriculumDetailView extends StatefulWidget {
   final bool isActive;
   final VoidCallback onBack;
   final VoidCallback onStart;
-  final VoidCallback? onNavigateToHome;
+  final void Function(CurriculumNode)? onSectionTap;
 
   const _CurriculumDetailView({
     required this.curriculum,
@@ -294,7 +261,7 @@ class _CurriculumDetailView extends StatefulWidget {
     required this.isActive,
     required this.onBack,
     required this.onStart,
-    this.onNavigateToHome,
+    this.onSectionTap,
   });
 
   @override
@@ -337,66 +304,7 @@ class _CurriculumDetailViewState extends State<_CurriculumDetailView> {
       );
       return;
     }
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(node.title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(node.description, style: const TextStyle(fontSize: 14)),
-            const SizedBox(height: 10),
-            Text(
-              '${node.subject} > ${node.chapter}',
-              style:
-                  const TextStyle(fontSize: 12, color: Color(0xFF8A8A8A)),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '스테이지 ${node.stages.length}개',
-              style:
-                  TextStyle(fontSize: 13, color: Colors.blue.shade400),
-            ),
-            if (node.prereqIds.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              const Text('선수 조건',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 6),
-              ...node.prereqIds.map((id) {
-                final prereq = widget.curriculum.nodes
-                    .firstWhere((n) => n.id == id);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _isDone(id)
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
-                        size: 16,
-                        color: _isDone(id) ? Colors.green : Colors.grey,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(prereq.title,
-                          style: const TextStyle(fontSize: 13)),
-                    ],
-                  ),
-                );
-              }),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('닫기'),
-          ),
-        ],
-      ),
-    );
+    widget.onSectionTap?.call(node);
   }
 
   @override
@@ -408,7 +316,8 @@ class _CurriculumDetailViewState extends State<_CurriculumDetailView> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final nodes = widget.curriculum.nodes;
-              final positions = _computePositions(constraints.maxWidth);
+              final positions =
+                  _computePositions(constraints.maxWidth);
               final maxLevel = nodes
                   .map((n) => n.level)
                   .reduce((a, b) => a > b ? a : b);
@@ -460,21 +369,18 @@ class _CurriculumDetailViewState extends State<_CurriculumDetailView> {
   Widget _buildDetailHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 16, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.md, AppSpacing.s20, AppSpacing.md),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF232323), Color(0xFF161616)],
-        ),
+        gradient: AppColors.gradHeader,
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.55),
-              blurRadius: 12,
+              blurRadius: AppSpacing.s12,
               offset: const Offset(0, 5)),
           const BoxShadow(
-              color: Color(0xFF3A3A3A),
-              blurRadius: 4,
+              color: AppColors.borderHighlightDim,
+              blurRadius: AppSpacing.xs,
               offset: Offset(-1, -1)),
         ],
       ),
@@ -485,26 +391,26 @@ class _CurriculumDetailViewState extends State<_CurriculumDetailView> {
             children: [
               IconButton(
                 onPressed: widget.onBack,
-                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                icon: const Icon(Icons.arrow_back_ios_new,
+                    size: AppSpacing.icon18),
                 padding: EdgeInsets.zero,
-                constraints:
-                    const BoxConstraints(minWidth: 36, minHeight: 36),
+                constraints: const BoxConstraints(
+                    minWidth: AppSpacing.s36, minHeight: AppSpacing.s36),
                 tooltip: '커리큘럼 목록',
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.xs),
               Expanded(
                 child: Text(
                   widget.curriculum.name,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+                  style: AppTextStyles.headingMedium,
                 ),
               ),
               if (!widget.isActive)
                 raised3DButton(
                   onTap: widget.onStart,
-                  shadowColor: Colors.blue.shade900,
-                  faceColor: Colors.blue.shade600,
-                  borderRadius: BorderRadius.circular(10),
+                  shadowColor: AppColors.blue900,
+                  faceColor: AppColors.blue600,
+                  borderRadius: BorderRadius.circular(AppSpacing.r10),
                   child: const Text(
                     '시작하기',
                     style: TextStyle(
@@ -513,53 +419,27 @@ class _CurriculumDetailViewState extends State<_CurriculumDetailView> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                )
-              else
-                raised3DButton(
-                  onTap: widget.onNavigateToHome,
-                  shadowColor: Colors.green.shade900,
-                  faceColor: Colors.green.shade700,
-                  borderRadius: BorderRadius.circular(10),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.play_arrow_rounded,
-                          color: Colors.white, size: 16),
-                      SizedBox(width: 4),
-                      Text(
-                        '이어하기',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.s6),
           Padding(
-            padding: const EdgeInsets.only(left: 40),
+            padding: const EdgeInsets.only(left: AppSpacing.s40),
             child: Text(
               widget.curriculum.description,
-              style: const TextStyle(
-                  fontSize: 13, color: Color(0xFF9E9E9E)),
+              style: AppTextStyles.bodySmallMuted,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.s10),
           Padding(
-            padding: const EdgeInsets.only(left: 40),
+            padding: const EdgeInsets.only(left: AppSpacing.s40),
             child: Row(
               children: [
-                _buildLegendItem(Colors.green.shade400, '완료'),
-                const SizedBox(width: 16),
-                _buildLegendItem(Colors.blue.shade300, '학습 가능'),
-                const SizedBox(width: 16),
-                _buildLegendItem(
-                    const Color(0xFF484848), '잠금'),
+                _buildLegendItem(AppColors.green400, '완료'),
+                const SizedBox(width: AppSpacing.md),
+                _buildLegendItem(AppColors.blue300, '학습 가능'),
+                const SizedBox(width: AppSpacing.md),
+                _buildLegendItem(AppColors.borderSubtle, '잠금'),
               ],
             ),
           ),
@@ -573,23 +453,21 @@ class _CurriculumDetailViewState extends State<_CurriculumDetailView> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 10,
-          height: 10,
+          width: AppSpacing.s10,
+          height: AppSpacing.s10,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
                 color: color.withValues(alpha: 0.4),
-                blurRadius: 4,
+                blurRadius: AppSpacing.xs,
               ),
             ],
           ),
         ),
-        const SizedBox(width: 4),
-        Text(label,
-            style: const TextStyle(
-                fontSize: 11, color: Color(0xFF9E9E9E))),
+        const SizedBox(width: AppSpacing.xs),
+        Text(label, style: AppTextStyles.captionSmallMuted),
       ],
     );
   }
@@ -614,23 +492,18 @@ class _NodeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subjectColor = _subjectAccent(subject);
+    final subjectColor = AppColors.subjectAccent(subject);
 
-    // ── 상태별 색상 계산 ──────────────────────────────────────
     final Color rimTop;
     final Color rimBottom;
     final List<Color> sphereColors;
     final Color glowColor;
 
     if (isCompleted) {
-      rimTop = Colors.green.shade300;
-      rimBottom = Colors.green.shade900;
-      sphereColors = [
-        Colors.green.shade300,
-        Colors.green.shade600,
-        Colors.green.shade900,
-      ];
-      glowColor = Colors.green;
+      rimTop = AppColors.green300;
+      rimBottom = AppColors.green900;
+      sphereColors = [AppColors.green300, AppColors.green600, AppColors.green900];
+      glowColor = AppColors.green;
     } else if (isUnlocked) {
       rimTop = Color.lerp(subjectColor, Colors.white, 0.55)!;
       rimBottom = Color.lerp(subjectColor, Colors.black, 0.5)!;
@@ -641,21 +514,20 @@ class _NodeWidget extends StatelessWidget {
       ];
       glowColor = subjectColor;
     } else {
-      rimTop = const Color(0xFF4A4A4A);
-      rimBottom = const Color(0xFF181818);
+      rimTop = AppColors.nodeLockedRimTop;
+      rimBottom = AppColors.nodeLockedRimBottom;
       sphereColors = [
-        const Color(0xFF3C3C3C),
-        const Color(0xFF262626),
-        const Color(0xFF141414),
+        AppColors.nodeLockedSphereLight,
+        AppColors.nodeLockedSphereMid,
+        AppColors.nodeLockedSphereDark,
       ];
       glowColor = Colors.transparent;
     }
 
-    // ── 내부 아이콘/텍스트 ────────────────────────────────────
     final Widget innerWidget;
     if (isCompleted) {
-      innerWidget =
-          const Icon(Icons.check_rounded, color: Colors.white, size: 24);
+      innerWidget = const Icon(Icons.check_rounded,
+          color: Colors.white, size: AppSpacing.lg);
     } else if (isUnlocked) {
       innerWidget = Text(
         title.length > 2 ? title.substring(0, 2) : title,
@@ -666,7 +538,7 @@ class _NodeWidget extends StatelessWidget {
       );
     } else {
       innerWidget = const Icon(Icons.lock_outline,
-          color: Color(0xFF686868), size: 20);
+          color: AppColors.textDimmed, size: AppSpacing.iconMd);
     }
 
     return GestureDetector(
@@ -677,7 +549,6 @@ class _NodeWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 외부 림 (그라데이션 테두리 + 그림자)
             Container(
               width: _kNodeRadius * 2,
               height: _kNodeRadius * 2,
@@ -692,18 +563,17 @@ class _NodeWidget extends StatelessWidget {
                   if (isCompleted || isUnlocked)
                     BoxShadow(
                       color: glowColor.withValues(alpha: 0.55),
-                      blurRadius: 16,
-                      spreadRadius: 3,
+                      blurRadius: AppSpacing.md,
+                      spreadRadius: AppSpacing.s3,
                     ),
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.6),
-                    blurRadius: 10,
+                    blurRadius: AppSpacing.s10,
                     offset: const Offset(4, 5),
                   ),
                 ],
               ),
               child: Center(
-                // 내부 구체 (방사형 그라데이션으로 3D 볼 효과)
                 child: Container(
                   width: _kNodeRadius * 2 - 7,
                   height: _kNodeRadius * 2 - 7,
@@ -720,7 +590,7 @@ class _NodeWidget extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.s6),
             Text(
               title,
               textAlign: TextAlign.center,
@@ -728,8 +598,8 @@ class _NodeWidget extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: (isCompleted || isUnlocked)
-                    ? const Color(0xFFEEEEEE)
-                    : const Color(0xFF707070),
+                    ? AppColors.textPrimary
+                    : AppColors.textLocked,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -766,15 +636,15 @@ class _EdgePainter extends CustomPainter {
 
         final isActive = completedIds.contains(prereqId);
 
-        // 글로우 레이어 (완료된 엣지에만)
         if (isActive) {
           final glowPaint = Paint()
-            ..color = Colors.green.withValues(alpha: 0.25)
+            ..color = AppColors.green.withValues(alpha: 0.25)
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 6
+            ..strokeWidth = AppSpacing.s6
             ..strokeCap = StrokeCap.round;
 
-          final from = Offset(fromCenter.dx, fromCenter.dy + _kNodeRadius);
+          final from =
+              Offset(fromCenter.dx, fromCenter.dy + _kNodeRadius);
           final to = Offset(toCenter.dx, toCenter.dy - _kNodeRadius);
           final midY = (from.dy + to.dy) / 2;
 
@@ -786,16 +656,14 @@ class _EdgePainter extends CustomPainter {
           );
         }
 
-        // 메인 엣지
         final paint = Paint()
-          ..color = isActive
-              ? Colors.green.shade400
-              : const Color(0xFF484848)
+          ..color = isActive ? AppColors.green400 : AppColors.edgeLocked
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.5
           ..strokeCap = StrokeCap.round;
 
-        final from = Offset(fromCenter.dx, fromCenter.dy + _kNodeRadius);
+        final from =
+            Offset(fromCenter.dx, fromCenter.dy + _kNodeRadius);
         final to = Offset(toCenter.dx, toCenter.dy - _kNodeRadius);
         final midY = (from.dy + to.dy) / 2;
 
