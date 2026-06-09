@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/content.dart';
 import '../services/content_service.dart';
+import '../theme/app_decorations.dart';
 
 class ContentScreen extends StatefulWidget {
   const ContentScreen({
@@ -45,7 +46,7 @@ class _ContentScreenState extends State<ContentScreen> {
   void _openChapterPopup(ContentChapter chapter) {
     showDialog(
       context: context,
-      barrierColor: Colors.black54,
+      barrierColor: Color(0xFF9E9E9E),
       builder: (_) => _ChapterPopup(chapter: chapter),
     );
   }
@@ -86,19 +87,14 @@ class _ContentScreenState extends State<ContentScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
-        ],
-      ),
+      decoration: headerDecoration(),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('컨텐츠', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           SizedBox(height: 4),
           Text('전체 학습 컨텐츠를 확인하세요',
-              style: TextStyle(fontSize: 13, color: Colors.black54)),
+              style: TextStyle(fontSize: 13, color: Color(0xFF9E9E9E))),
         ],
       ),
     );
@@ -107,7 +103,7 @@ class _ContentScreenState extends State<ContentScreen> {
   Widget _buildSubjectTabs() {
     return Container(
       height: 50,
-      color: Colors.white,
+      color: const Color(0xFF1E1E1E),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
@@ -122,10 +118,10 @@ class _ContentScreenState extends State<ContentScreen> {
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.blue : Colors.grey.shade100,
+                  color: isSelected ? Colors.blue : const Color(0xFF2A2A2A),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? Colors.blue : Colors.grey.shade300,
+                    color: isSelected ? Colors.blue : const Color(0xFF484848),
                   ),
                 ),
                 child: Center(
@@ -135,7 +131,7 @@ class _ContentScreenState extends State<ContentScreen> {
                       fontSize: 13,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected ? Colors.white : Colors.black54,
+                      color: isSelected ? Colors.white : Color(0xFF9E9E9E),
                     ),
                   ),
                 ),
@@ -168,25 +164,16 @@ class _ChapterCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(
-              color: Color.fromRGBO(0, 0, 0, 0.07),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
+        decoration: card3D(),
         child: Row(
           children: [
             Container(
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Colors.blue.shade900,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade700, width: 1),
               ),
               child: Center(
                 child: Text(
@@ -194,7 +181,7 @@ class _ChapterCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade700,
+                    color: Colors.blue.shade300,
                   ),
                 ),
               ),
@@ -212,7 +199,7 @@ class _ChapterCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     chapter.description,
-                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -220,7 +207,7 @@ class _ChapterCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+            Icon(Icons.chevron_right, color: const Color(0xFF686868)),
           ],
         ),
       ),
@@ -251,7 +238,7 @@ class _ChapterPopupState extends State<_ChapterPopup> {
           maxHeight: MediaQuery.of(context).size.height * 0.75,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -283,10 +270,10 @@ class _ChapterPopupState extends State<_ChapterPopup> {
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
               child: Text(
                 widget.chapter.description,
-                style: const TextStyle(fontSize: 13, color: Colors.black54),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
               ),
             ),
-            Divider(height: 1, color: Colors.grey.shade200),
+            Divider(height: 1, color: const Color(0xFF383838)),
             Flexible(
               child: ListView.builder(
                 padding: const EdgeInsets.all(14),
@@ -331,9 +318,9 @@ class _SectionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: const Color(0xFF252525),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: const Color(0xFF383838)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,7 +343,7 @@ class _SectionCard extends StatelessWidget {
                       Text(
                         section.description,
                         style: const TextStyle(
-                            fontSize: 12, color: Colors.black54),
+                            fontSize: 12, color: Color(0xFF9E9E9E)),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -371,13 +358,13 @@ class _SectionCard extends StatelessWidget {
                         horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: isExpanded
-                          ? Colors.blue.shade50
-                          : Colors.white,
+                          ? Colors.blue.shade900
+                          : const Color(0xFF2A2A2A),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isExpanded
                             ? Colors.blue.shade200
-                            : Colors.grey.shade300,
+                            : const Color(0xFF484848),
                       ),
                     ),
                     child: Text(
@@ -385,7 +372,7 @@ class _SectionCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: isExpanded ? Colors.blue : Colors.black54,
+                        color: isExpanded ? Colors.blue : Color(0xFF9E9E9E),
                       ),
                     ),
                   ),
@@ -394,7 +381,7 @@ class _SectionCard extends StatelessWidget {
             ),
           ),
           if (isExpanded) ...[
-            Divider(height: 1, color: Colors.grey.shade200),
+            Divider(height: 1, color: const Color(0xFF383838)),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Column(
@@ -418,7 +405,7 @@ class _SectionCard extends StatelessWidget {
                             Text(
                               stage.title,
                               style: const TextStyle(
-                                  fontSize: 13, color: Colors.black87),
+                                  fontSize: 13, color: Color(0xFFEEEEEE)),
                             ),
                           ],
                         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_decorations.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -37,17 +38,7 @@ class ProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Container(
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16.0),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color.fromRGBO(0, 0, 0, 0.08),
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
+              decoration: card3D(),
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
@@ -56,7 +47,7 @@ class ProfileScreen extends StatelessWidget {
                       const Expanded(
                         child: Text(
                           '학습 등급',
-                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                          style: TextStyle(fontSize: 16, color: Color(0xFF9E9E9E)),
                         ),
                       ),
                       Row(
@@ -77,20 +68,21 @@ class ProfileScreen extends StatelessWidget {
                       const Expanded(
                         child: Text(
                           '학습 목표',
-                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                          style: TextStyle(fontSize: 16, color: Color(0xFF9E9E9E)),
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
+                          color: Colors.blue.shade900,
                           borderRadius: BorderRadius.circular(12.0),
+                          border: Border.all(color: Colors.blue.shade700, width: 1),
                         ),
-                        child: const Text(
+                        child: Text(
                           '고수 투자자',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.blue,
+                            color: Colors.blue.shade300,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -106,17 +98,7 @@ class ProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Container(
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16.0),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color.fromRGBO(0, 0, 0, 0.08),
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
+              decoration: card3D(),
               height: 160,
               child: Row(
                 children: [
@@ -126,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
                       children: [
                         const Text(
                           '학습한 섹션 수',
-                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                          style: TextStyle(fontSize: 16, color: Color(0xFF9E9E9E)),
                         ),
                         const SizedBox(height: 12),
                         Container(
@@ -153,7 +135,7 @@ class ProfileScreen extends StatelessWidget {
                   Container(
                     width: 1,
                     height: 120,
-                    color: Colors.grey.shade200,
+                    color: const Color(0xFF383838),
                   ),
                   Expanded(
                     child: Column(
@@ -161,7 +143,7 @@ class ProfileScreen extends StatelessWidget {
                       children: [
                         const Text(
                           '학습한 스테이지 수',
-                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                          style: TextStyle(fontSize: 16, color: Color(0xFF9E9E9E)),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 12),
