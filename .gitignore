@@ -1,3 +1,9 @@
+# Flutter platform ephemeral (auto-generated, should not be committed)
+**/windows/flutter/ephemeral/
+**/linux/flutter/ephemeral/
+**/macos/Flutter/ephemeral/
+**/ios/Flutter/ephemeral/
+
 # Miscellaneous
 *.class
 *.log
