@@ -9,7 +9,7 @@ class LevelAssessmentScreen extends StatelessWidget {
       child: Text(
         '수준평가 뷰\nPlaceholder',
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 18, color: Colors.black54),
+        style: TextStyle(fontSize: 18, color: Color(0xFF9E9E9E)),
       ),
     );
   }

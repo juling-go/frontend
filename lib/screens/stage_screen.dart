@@ -1,6 +1,57 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../models/stage.dart';
+
+class _ConfettiParticle {
+  final Color color;
+  final double startX;
+  final double vy;
+  final double vx;
+  final double size;
+  final double rotation;
+  final double rotationSpeed;
+
+  const _ConfettiParticle({
+    required this.color,
+    required this.startX,
+    required this.vy,
+    required this.vx,
+    required this.size,
+    required this.rotation,
+    required this.rotationSpeed,
+  });
+}
+
+class _ConfettiPainter extends CustomPainter {
+  final List<_ConfettiParticle> particles;
+  final double progress;
+
+  _ConfettiPainter(this.particles, this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final p in particles) {
+      final x = p.startX * size.width + p.vx * progress;
+      final y = -20 + p.vy * progress * size.height + 180 * progress * progress;
+      final alpha = (1 - progress * 0.85).clamp(0.0, 1.0);
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: alpha)
+        ..style = PaintingStyle.fill;
+      canvas.save();
+      canvas.translate(x, y);
+      canvas.rotate(p.rotation + progress * p.rotationSpeed);
+      canvas.drawRect(
+        Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size * 0.5),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ConfettiPainter old) => old.progress != progress;
+}
 
 class StageScreen extends StatefulWidget {
   final Stage stage;
@@ -11,11 +62,21 @@ class StageScreen extends StatefulWidget {
   State<StageScreen> createState() => _StageScreenState();
 }
 
-class _StageScreenState extends State<StageScreen> {
+class _StageScreenState extends State<StageScreen>
+    with TickerProviderStateMixin {
   int _qIndex = 0;
   final Map<int, Set<String>> _selected = {};
   final Map<int, bool> _submitted = {};
   bool _showHint = false;
+  bool? _lastCorrect;
+
+  late final AnimationController _resultController;
+  late final AnimationController _shakeController;
+  late final AnimationController _flashController;
+  late final AnimationController _confettiController;
+  late List<_ConfettiParticle> _confettiParticles;
+
+  final _rng = Random();
 
   List<Question> get _questions => widget.stage.questions;
   Question get _current => _questions[_qIndex];
@@ -27,6 +88,46 @@ class _StageScreenState extends State<StageScreen> {
     final correct = Set.of(_current.correctIds);
     return _currentSelected.length == correct.length &&
         _currentSelected.every(correct.contains);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _resultController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
+    _shakeController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+    _flashController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+    _confettiController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1800));
+    _confettiParticles = _buildParticles();
+  }
+
+  List<_ConfettiParticle> _buildParticles() {
+    const colors = [
+      Color(0xFFFFD700), Color(0xFF64B5F6), Color(0xFF81C784),
+      Color(0xFFF06292), Color(0xFFFFB74D), Color(0xFFBA68C8),
+      Color(0xFF4DD0E1), Color(0xFFFF8A65),
+    ];
+    return List.generate(50, (_) => _ConfettiParticle(
+      color: colors[_rng.nextInt(colors.length)],
+      startX: _rng.nextDouble(),
+      vy: _rng.nextDouble() * 0.6 + 0.4,
+      vx: (_rng.nextDouble() - 0.5) * 60,
+      size: _rng.nextDouble() * 10 + 5,
+      rotation: _rng.nextDouble() * pi * 2,
+      rotationSpeed: (_rng.nextDouble() - 0.5) * 8,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _resultController.dispose();
+    _shakeController.dispose();
+    _flashController.dispose();
+    _confettiController.dispose();
+    super.dispose();
   }
 
   void _toggleSelect(String id) {
@@ -45,10 +146,20 @@ class _StageScreenState extends State<StageScreen> {
   }
 
   void _submit() {
+    final correct = _isCorrect;
     setState(() {
       _submitted[_qIndex] = true;
       _showHint = false;
+      _lastCorrect = correct;
     });
+    _resultController.forward(from: 0);
+    _flashController.forward(from: 0);
+    if (correct) {
+      _confettiParticles = _buildParticles();
+      _confettiController.forward(from: 0);
+    } else {
+      _shakeController.forward(from: 0);
+    }
   }
 
   void _next() {
@@ -58,7 +169,12 @@ class _StageScreenState extends State<StageScreen> {
       setState(() {
         _qIndex++;
         _showHint = false;
+        _lastCorrect = null;
       });
+      _resultController.reset();
+      _shakeController.reset();
+      _flashController.reset();
+      _confettiController.reset();
     }
   }
 
@@ -80,9 +196,9 @@ class _StageScreenState extends State<StageScreen> {
     final progress = (_qIndex + (_isSubmitted ? 1 : 0)) / _questions.length;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF1E1E1E),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close),
@@ -96,62 +212,129 @@ class _StageScreenState extends State<StageScreen> {
           preferredSize: const Size.fromHeight(4),
           child: LinearProgressIndicator(
             value: progress,
-            backgroundColor: Colors.grey.shade200,
+            backgroundColor: const Color(0xFF2E2E2E),
             valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
             minHeight: 4,
           ),
         ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 문제 번호
-                  Text(
-                    '${_qIndex + 1} / ${_questions.length}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.blue.shade600,
-                      fontWeight: FontWeight.w600,
-                    ),
+          Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${_qIndex + 1} / ${_questions.length}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTypeBadge(_current.type),
+                      const SizedBox(height: 14),
+                      Text(
+                        _current.content,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      // Shake wrapper for wrong answer
+                      AnimatedBuilder(
+                        animation: _shakeController,
+                        builder: (context, child) {
+                          final t = _shakeController.value;
+                          final offset = sin(t * pi * 6) * (1 - t) * 14;
+                          return Transform.translate(
+                            offset: Offset(offset, 0),
+                            child: child!,
+                          );
+                        },
+                        child: _buildChoices(),
+                      ),
+                      if (_showHint && _current.hint != null) ...[
+                        const SizedBox(height: 20),
+                        _buildHintBox(_current.hint!),
+                      ],
+                      if (_isSubmitted) ...[
+                        const SizedBox(height: 20),
+                        SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.5),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: _resultController,
+                            curve: Curves.easeOutCubic,
+                          )),
+                          child: FadeTransition(
+                            opacity: CurvedAnimation(
+                              parent: _resultController,
+                              curve: const Interval(0.0, 0.5),
+                            ),
+                            child: ScaleTransition(
+                              scale: Tween<double>(begin: 0.85, end: 1.0).animate(
+                                CurvedAnimation(
+                                  parent: _resultController,
+                                  curve: _lastCorrect == true
+                                      ? Curves.elasticOut
+                                      : Curves.easeOutBack,
+                                ),
+                              ),
+                              child: _buildResultMessage(),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 100),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  // 문제 유형 배지
-                  _buildTypeBadge(_current.type),
-                  const SizedBox(height: 14),
-                  // 문제 내용
-                  Text(
-                    _current.content,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      height: 1.5,
+                ),
+              ),
+              _buildBottomBar(),
+            ],
+          ),
+          // Green/red flash overlay
+          AnimatedBuilder(
+            animation: _flashController,
+            builder: (ctx, _) {
+              final alpha = (1 - _flashController.value) * 0.28;
+              if (alpha <= 0 || _lastCorrect == null) {
+                return const SizedBox.shrink();
+              }
+              final color = _lastCorrect! ? Colors.green : Colors.red;
+              return IgnorePointer(
+                child: Container(color: color.withValues(alpha: alpha)),
+              );
+            },
+          ),
+          // Confetti for correct answers
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _confettiController,
+                builder: (ctx, _) {
+                  if (_confettiController.value == 0) {
+                    return const SizedBox.shrink();
+                  }
+                  return CustomPaint(
+                    painter: _ConfettiPainter(
+                      _confettiParticles,
+                      _confettiController.value,
                     ),
-                  ),
-                  const SizedBox(height: 28),
-                  // 선택지
-                  _buildChoices(),
-                  // 힌트
-                  if (_showHint && _current.hint != null) ...[
-                    const SizedBox(height: 20),
-                    _buildHintBox(_current.hint!),
-                  ],
-                  // 제출 후 결과 메시지
-                  if (_isSubmitted) ...[
-                    const SizedBox(height: 20),
-                    _buildResultMessage(),
-                  ],
-                  const SizedBox(height: 100),
-                ],
+                  );
+                },
               ),
             ),
           ),
-          // 하단 버튼 영역
-          _buildBottomBar(),
         ],
       ),
     );
@@ -207,26 +390,26 @@ class _StageScreenState extends State<StageScreen> {
 
     if (_isSubmitted) {
       if (isCorrect) {
-        bgColor = Colors.green.shade50;
+        bgColor = Colors.green.shade900;
         borderColor = Colors.green;
-        textColor = Colors.green.shade700;
+        textColor = Colors.green.shade300;
       } else if (isSelected) {
-        bgColor = Colors.red.shade50;
+        bgColor = Colors.red.shade900;
         borderColor = Colors.red;
-        textColor = Colors.red.shade700;
+        textColor = Colors.red.shade300;
       } else {
-        bgColor = Colors.white;
-        borderColor = Colors.grey.shade300;
-        textColor = Colors.black45;
+        bgColor = const Color(0xFF1E1E1E);
+        borderColor = const Color(0xFF383838);
+        textColor = const Color(0xFF686868);
       }
     } else if (isSelected) {
-      bgColor = Colors.blue.shade50;
+      bgColor = Colors.blue.shade900;
       borderColor = Colors.blue;
-      textColor = Colors.blue.shade700;
+      textColor = Colors.blue.shade300;
     } else {
-      bgColor = Colors.white;
-      borderColor = Colors.grey.shade300;
-      textColor = Colors.black54;
+      bgColor = const Color(0xFF1E1E1E);
+      borderColor = const Color(0xFF383838);
+      textColor = const Color(0xFF9E9E9E);
     }
 
     return GestureDetector(
@@ -269,36 +452,36 @@ class _StageScreenState extends State<StageScreen> {
 
         if (_isSubmitted) {
           if (isCorrect) {
-            bgColor = Colors.green.shade50;
+            bgColor = Colors.green.shade900;
             borderColor = Colors.green;
-            textColor = Colors.green.shade800;
+            textColor = Colors.green.shade300;
             trailingIcon = const Icon(Icons.check_circle, color: Colors.green, size: 20);
           } else if (isSelected) {
-            bgColor = Colors.red.shade50;
+            bgColor = Colors.red.shade900;
             borderColor = Colors.red;
-            textColor = Colors.red.shade800;
+            textColor = Colors.red.shade300;
             trailingIcon = const Icon(Icons.cancel, color: Colors.red, size: 20);
           } else {
-            bgColor = Colors.white;
-            borderColor = Colors.grey.shade200;
-            textColor = Colors.black38;
+            bgColor = const Color(0xFF1E1E1E);
+            borderColor = const Color(0xFF383838);
+            textColor = const Color(0xFF686868);
           }
         } else if (isSelected) {
-          bgColor = Colors.blue.shade50;
+          bgColor = Colors.blue.shade900;
           borderColor = Colors.blue;
-          textColor = Colors.blue.shade800;
+          textColor = Colors.blue.shade300;
           trailingIcon = Icon(
             isMultiple ? Icons.check_box : Icons.radio_button_checked,
             color: Colors.blue,
             size: 20,
           );
         } else {
-          bgColor = Colors.white;
-          borderColor = Colors.grey.shade300;
-          textColor = Colors.black87;
-          trailingIcon = Icon(
-            isMultiple ? Icons.check_box_outline_blank : Icons.radio_button_unchecked,
-            color: Colors.grey.shade400,
+          bgColor = const Color(0xFF1E1E1E);
+          borderColor = const Color(0xFF383838);
+          textColor = const Color(0xFFEEEEEE);
+          trailingIcon = const Icon(
+            Icons.radio_button_unchecked,
+            color: Color(0xFF686868),
             size: 20,
           );
         }
@@ -333,7 +516,7 @@ class _StageScreenState extends State<StageScreen> {
                     style: TextStyle(fontSize: 15, color: textColor),
                   ),
                 ),
-                if (trailingIcon case final icon?) icon,
+                ?trailingIcon,
               ],
             ),
           ),
@@ -347,7 +530,7 @@ class _StageScreenState extends State<StageScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
+        color: const Color(0xFF2A2000),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.amber.shade200),
       ),
@@ -373,11 +556,18 @@ class _StageScreenState extends State<StageScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: correct ? Colors.green.shade50 : Colors.red.shade50,
+        color: correct ? Colors.green.shade900 : Colors.red.shade900,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: correct ? Colors.green.shade200 : Colors.red.shade200,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: (correct ? Colors.green : Colors.red).withValues(alpha: 0.3),
+            blurRadius: 12,
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -392,7 +582,7 @@ class _StageScreenState extends State<StageScreen> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: correct ? Colors.green.shade700 : Colors.red.shade700,
+              color: correct ? Colors.green.shade300 : Colors.red.shade300,
             ),
           ),
         ],
@@ -404,10 +594,10 @@ class _StageScreenState extends State<StageScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E1E1E),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),

@@ -127,9 +127,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: const Color(0xFF2A2A2A),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.grey.shade300),
+                        border: Border.all(color: const Color(0xFF484848)),
                       ),
                       child: const Center(
                         child: Text(
