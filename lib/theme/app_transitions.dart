@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
+import 'app_spacing.dart';
 
 // ── 전환 속도 설정 ────────────────────────────────────────────
-// 여기 값만 바꾸면 전체 앱 전환 속도가 변경됩니다.
-const Duration kTabTransitionDuration = Duration(milliseconds: 200);
+const Duration kTabTransitionDuration  = Duration(milliseconds: 200);
 const Duration kRouteTransitionDuration = Duration(milliseconds: 320);
-const Duration kStageLoadingDuration = Duration(milliseconds: 900);
+const Duration kStageLoadingDuration   = Duration(milliseconds: 900);
 
 // ── 탭 전환 애니메이션 ─────────────────────────────────────────
-// AnimatedSwitcher의 transitionBuilder에 전달합니다.
-// 다른 효과로 바꾸려면 이 함수만 수정하세요.
 Widget tabTransitionBuilder(Widget child, Animation<double> animation) {
   return FadeTransition(
     opacity: CurvedAnimation(parent: animation, curve: Curves.easeIn),
@@ -17,8 +16,6 @@ Widget tabTransitionBuilder(Widget child, Animation<double> animation) {
 }
 
 // ── 화면 전환 라우트 ───────────────────────────────────────────
-// 필요에 따라 fadeRoute / slideUpRoute 중 선택해서 사용하세요.
-
 PageRouteBuilder<T> fadeRoute<T>(Widget page) => PageRouteBuilder<T>(
       transitionDuration: kRouteTransitionDuration,
       reverseTransitionDuration: kRouteTransitionDuration,
@@ -62,7 +59,6 @@ Future<T?> pushWithLoadingOverlay<T>({
 }
 
 // ── 로딩 오버레이 위젯 ────────────────────────────────────────
-// 디자인을 바꾸고 싶다면 이 위젯만 수정하세요.
 class _StageLoadingOverlay extends StatefulWidget {
   final String? title;
   final String? subtitle;
@@ -96,7 +92,7 @@ class _StageLoadingOverlayState extends State<_StageLoadingOverlay>
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -110,28 +106,28 @@ class _StageLoadingOverlayState extends State<_StageLoadingOverlay>
                 ),
               ),
               child: Container(
-                width: 80,
-                height: 80,
+                width: AppSpacing.loginIcon,
+                height: AppSpacing.loginIcon,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.blue.shade900,
+                  color: AppColors.blue900,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.blue.withValues(alpha: 0.45),
-                      blurRadius: 24,
-                      spreadRadius: 6,
+                      color: AppColors.blue.withValues(alpha: 0.45),
+                      blurRadius: AppSpacing.lg,
+                      spreadRadius: AppSpacing.s6,
                     ),
                   ],
                 ),
                 child: const Icon(
                   Icons.school_outlined,
                   color: Colors.white,
-                  size: 36,
+                  size: AppSpacing.icon36,
                 ),
               ),
             ),
             if (widget.title != null) ...[
-              const SizedBox(height: 22),
+              const SizedBox(height: AppSpacing.s22),
               Text(
                 widget.title!,
                 style: const TextStyle(
@@ -143,23 +139,23 @@ class _StageLoadingOverlayState extends State<_StageLoadingOverlay>
               ),
             ],
             if (widget.subtitle != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.s6),
               Text(
                 widget.subtitle!,
                 style: const TextStyle(
-                  color: Color(0xFF9E9E9E),
+                  color: AppColors.textSecondary,
                   fontSize: 13,
                 ),
                 textAlign: TextAlign.center,
               ),
             ],
-            const SizedBox(height: 28),
+            const SizedBox(height: AppSpacing.s28),
             SizedBox(
               width: 100,
               child: LinearProgressIndicator(
-                backgroundColor: const Color(0xFF2A2A2A),
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade400),
-                minHeight: 3,
+                backgroundColor: AppColors.surfaceElevated,
+                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.blue400),
+                minHeight: AppSpacing.s3,
               ),
             ),
           ],

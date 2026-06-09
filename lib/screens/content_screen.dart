@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/content.dart';
 import '../services/content_service.dart';
-import '../theme/app_decorations.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
+import '../theme/app_theme.dart';
 
 class ContentScreen extends StatefulWidget {
   const ContentScreen({
@@ -46,7 +49,7 @@ class _ContentScreenState extends State<ContentScreen> {
   void _openChapterPopup(ContentChapter chapter) {
     showDialog(
       context: context,
-      barrierColor: Color(0xFF9E9E9E),
+      barrierColor: AppColors.textSecondary,
       builder: (_) => _ChapterPopup(chapter: chapter),
     );
   }
@@ -56,7 +59,6 @@ class _ContentScreenState extends State<ContentScreen> {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-
     if (_subjects.isEmpty) {
       return const Center(child: Text('표시할 컨텐츠가 없습니다'));
     }
@@ -70,7 +72,7 @@ class _ContentScreenState extends State<ContentScreen> {
         _buildSubjectTabs(),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             itemCount: chapters.length,
             itemBuilder: (context, index) => _ChapterCard(
               chapter: chapters[index],
@@ -86,15 +88,15 @@ class _ContentScreenState extends State<ContentScreen> {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s20, AppSpacing.s20, AppSpacing.s20, AppSpacing.s14),
       decoration: headerDecoration(),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('컨텐츠', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          SizedBox(height: 4),
-          Text('전체 학습 컨텐츠를 확인하세요',
-              style: TextStyle(fontSize: 13, color: Color(0xFF9E9E9E))),
+          Text('컨텐츠', style: AppTextStyles.displayMedium),
+          SizedBox(height: AppSpacing.xs),
+          Text('전체 학습 컨텐츠를 확인하세요', style: AppTextStyles.bodySmallMuted),
         ],
       ),
     );
@@ -102,26 +104,31 @@ class _ContentScreenState extends State<ContentScreen> {
 
   Widget _buildSubjectTabs() {
     return Container(
-      height: 50,
-      color: const Color(0xFF1E1E1E),
+      height: AppSpacing.tabHeight,
+      color: AppColors.surface,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.s7),
         itemCount: _subjects.length,
         itemBuilder: (context, index) {
           final isSelected = index == _selectedIndex;
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: GestureDetector(
               onTap: () => setState(() => _selectedIndex = index),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 18),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.s18),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.blue : const Color(0xFF2A2A2A),
-                  borderRadius: BorderRadius.circular(20),
+                  color:
+                      isSelected ? AppColors.blue : AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(AppSpacing.s20),
                   border: Border.all(
-                    color: isSelected ? Colors.blue : const Color(0xFF484848),
+                    color: isSelected
+                        ? AppColors.blue
+                        : AppColors.borderSubtle,
                   ),
                 ),
                 child: Center(
@@ -131,7 +138,9 @@ class _ContentScreenState extends State<ContentScreen> {
                       fontSize: 13,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected ? Colors.white : Color(0xFF9E9E9E),
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -144,7 +153,7 @@ class _ContentScreenState extends State<ContentScreen> {
   }
 }
 
-// --- Chapter card ---
+// ── Chapter card ─────────────────────────────────────────────
 
 class _ChapterCard extends StatelessWidget {
   final ContentChapter chapter;
@@ -162,8 +171,8 @@ class _ChapterCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: AppSpacing.s12),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: card3D(),
         child: Row(
           children: [
@@ -171,43 +180,39 @@ class _ChapterCard extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: Colors.blue.shade900,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade700, width: 1),
+                color: AppColors.blue900,
+                borderRadius: BorderRadius.circular(AppSpacing.rMd),
+                border: Border.all(color: AppColors.blue700),
               ),
               child: Center(
                 child: Text(
                   '$index',
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: const TextStyle(
+                    fontSize: AppSpacing.md,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade300,
+                    color: AppColors.blue300,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: AppSpacing.s14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    chapter.title,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
+                  Text(chapter.title, style: AppTextStyles.titleMedium),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     chapter.description,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
+                    style: AppTextStyles.bodySmallMuted,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Icon(Icons.chevron_right, color: const Color(0xFF686868)),
+            const SizedBox(width: AppSpacing.sm),
+            const Icon(Icons.chevron_right, color: AppColors.textDimmed),
           ],
         ),
       ),
@@ -215,7 +220,7 @@ class _ChapterCard extends StatelessWidget {
   }
 }
 
-// --- Chapter popup ---
+// ── Chapter popup ────────────────────────────────────────────
 
 class _ChapterPopup extends StatefulWidget {
   final ContentChapter chapter;
@@ -232,51 +237,53 @@ class _ChapterPopupState extends State<_ChapterPopup> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+      insetPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.s40),
       child: Container(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.75,
         ),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(20),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.rXl),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 8, 0),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s20, AppSpacing.s20, AppSpacing.sm, 0),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       widget.chapter.title,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                      style: AppTextStyles.headingMedium,
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
-                    padding: const EdgeInsets.all(8),
-                    constraints:
-                        const BoxConstraints(minWidth: 40, minHeight: 40),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    constraints: const BoxConstraints(
+                        minWidth: AppSpacing.s40, minHeight: AppSpacing.s40),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s20, AppSpacing.xs, AppSpacing.s20, AppSpacing.s14),
               child: Text(
                 widget.chapter.description,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
+                style: AppTextStyles.bodySmallMuted,
               ),
             ),
-            Divider(height: 1, color: const Color(0xFF383838)),
+            const Divider(height: 1, color: AppColors.border),
             Flexible(
               child: ListView.builder(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(AppSpacing.s14),
                 shrinkWrap: true,
                 itemCount: widget.chapter.sections.length,
                 itemBuilder: (context, index) {
@@ -300,7 +307,7 @@ class _ChapterPopupState extends State<_ChapterPopup> {
   }
 }
 
-// --- Section card ---
+// ── Section card ─────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
   final ContentSection section;
@@ -316,17 +323,18 @@ class _SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: AppSpacing.s10),
       decoration: BoxDecoration(
-        color: const Color(0xFF252525),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF383838)),
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(AppSpacing.rMd),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s14, AppSpacing.s12, AppSpacing.sm, AppSpacing.s12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -334,37 +342,32 @@ class _SectionCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        section.title,
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 3),
+                      Text(section.title, style: AppTextStyles.titleSmall),
+                      const SizedBox(height: AppSpacing.s3),
                       Text(
                         section.description,
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF9E9E9E)),
+                        style: AppTextStyles.captionMuted,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 GestureDetector(
                   onTap: onToggle,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                        horizontal: AppSpacing.s10, vertical: AppSpacing.s5),
                     decoration: BoxDecoration(
                       color: isExpanded
-                          ? Colors.blue.shade900
-                          : const Color(0xFF2A2A2A),
-                      borderRadius: BorderRadius.circular(8),
+                          ? AppColors.blue900
+                          : AppColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(AppSpacing.rSm),
                       border: Border.all(
                         color: isExpanded
-                            ? Colors.blue.shade200
-                            : const Color(0xFF484848),
+                            ? AppColors.blue300
+                            : AppColors.borderSubtle,
                       ),
                     ),
                     child: Text(
@@ -372,7 +375,9 @@ class _SectionCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: isExpanded ? Colors.blue : Color(0xFF9E9E9E),
+                        color: isExpanded
+                            ? AppColors.blue
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -381,31 +386,31 @@ class _SectionCard extends StatelessWidget {
             ),
           ),
           if (isExpanded) ...[
-            Divider(height: 1, color: const Color(0xFF383838)),
+            const Divider(height: 1, color: AppColors.border),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s6),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: section.stages
                     .map(
                       (stage) => Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
+                            horizontal: AppSpacing.s14, vertical: AppSpacing.s6),
                         child: Row(
                           children: [
                             Container(
-                              width: 6,
-                              height: 6,
+                              width: AppSpacing.s6,
+                              height: AppSpacing.s6,
                               decoration: const BoxDecoration(
-                                color: Colors.blue,
+                                color: AppColors.blue,
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: AppSpacing.s10),
                             Text(
                               stage.title,
                               style: const TextStyle(
-                                  fontSize: 13, color: Color(0xFFEEEEEE)),
+                                  fontSize: 13, color: AppColors.textPrimary),
                             ),
                           ],
                         ),

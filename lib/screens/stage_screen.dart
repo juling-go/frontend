@@ -2,6 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../models/stage.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
 
 class _ConfettiParticle {
   final Color color;
@@ -105,20 +108,18 @@ class _StageScreenState extends State<StageScreen>
   }
 
   List<_ConfettiParticle> _buildParticles() {
-    const colors = [
-      Color(0xFFFFD700), Color(0xFF64B5F6), Color(0xFF81C784),
-      Color(0xFFF06292), Color(0xFFFFB74D), Color(0xFFBA68C8),
-      Color(0xFF4DD0E1), Color(0xFFFF8A65),
-    ];
-    return List.generate(50, (_) => _ConfettiParticle(
-      color: colors[_rng.nextInt(colors.length)],
-      startX: _rng.nextDouble(),
-      vy: _rng.nextDouble() * 0.6 + 0.4,
-      vx: (_rng.nextDouble() - 0.5) * 60,
-      size: _rng.nextDouble() * 10 + 5,
-      rotation: _rng.nextDouble() * pi * 2,
-      rotationSpeed: (_rng.nextDouble() - 0.5) * 8,
-    ));
+    return List.generate(
+      50,
+      (_) => _ConfettiParticle(
+        color: AppColors.confetti[_rng.nextInt(AppColors.confetti.length)],
+        startX: _rng.nextDouble(),
+        vy: _rng.nextDouble() * 0.6 + 0.4,
+        vx: (_rng.nextDouble() - 0.5) * 60,
+        size: _rng.nextDouble() * 10 + 5,
+        rotation: _rng.nextDouble() * pi * 2,
+        rotationSpeed: (_rng.nextDouble() - 0.5) * 8,
+      ),
+    );
   }
 
   @override
@@ -193,27 +194,25 @@ class _StageScreenState extends State<StageScreen>
       );
     }
 
-    final progress = (_qIndex + (_isSubmitted ? 1 : 0)) / _questions.length;
+    final progress =
+        (_qIndex + (_isSubmitted ? 1 : 0)) / _questions.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          widget.stage.title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
+        title: Text(widget.stage.title, style: AppTextStyles.titleMedium),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
           child: LinearProgressIndicator(
             value: progress,
-            backgroundColor: const Color(0xFF2E2E2E),
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+            backgroundColor: AppColors.borderDark,
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.blue),
             minHeight: 4,
           ),
         ),
@@ -224,31 +223,23 @@ class _StageScreenState extends State<StageScreen>
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(AppSpacing.s20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '${_qIndex + 1} / ${_questions.length}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.blue.shade600,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildTypeBadge(_current.type),
-                      const SizedBox(height: 14),
-                      Text(
-                        _current.content,
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 13,
+                          color: AppColors.blue600,
                           fontWeight: FontWeight.w600,
-                          height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 28),
-                      // Shake wrapper for wrong answer
+                      const SizedBox(height: AppSpacing.s10),
+                      _buildTypeBadge(_current.type),
+                      const SizedBox(height: AppSpacing.s14),
+                      Text(_current.content, style: AppTextStyles.question),
+                      const SizedBox(height: AppSpacing.s28),
                       AnimatedBuilder(
                         animation: _shakeController,
                         builder: (context, child) {
@@ -262,11 +253,11 @@ class _StageScreenState extends State<StageScreen>
                         child: _buildChoices(),
                       ),
                       if (_showHint && _current.hint != null) ...[
-                        const SizedBox(height: 20),
+                        const SizedBox(height: AppSpacing.s20),
                         _buildHintBox(_current.hint!),
                       ],
                       if (_isSubmitted) ...[
-                        const SizedBox(height: 20),
+                        const SizedBox(height: AppSpacing.s20),
                         SlideTransition(
                           position: Tween<Offset>(
                             begin: const Offset(0, 0.5),
@@ -281,14 +272,13 @@ class _StageScreenState extends State<StageScreen>
                               curve: const Interval(0.0, 0.5),
                             ),
                             child: ScaleTransition(
-                              scale: Tween<double>(begin: 0.85, end: 1.0).animate(
-                                CurvedAnimation(
-                                  parent: _resultController,
-                                  curve: _lastCorrect == true
-                                      ? Curves.elasticOut
-                                      : Curves.easeOutBack,
-                                ),
-                              ),
+                              scale: Tween<double>(begin: 0.85, end: 1.0)
+                                  .animate(CurvedAnimation(
+                                parent: _resultController,
+                                curve: _lastCorrect == true
+                                    ? Curves.elasticOut
+                                    : Curves.easeOutBack,
+                              )),
                               child: _buildResultMessage(),
                             ),
                           ),
@@ -302,7 +292,6 @@ class _StageScreenState extends State<StageScreen>
               _buildBottomBar(),
             ],
           ),
-          // Green/red flash overlay
           AnimatedBuilder(
             animation: _flashController,
             builder: (ctx, _) {
@@ -316,7 +305,6 @@ class _StageScreenState extends State<StageScreen>
               );
             },
           ),
-          // Confetti for correct answers
           Positioned.fill(
             child: IgnorePointer(
               child: AnimatedBuilder(
@@ -342,15 +330,16 @@ class _StageScreenState extends State<StageScreen>
 
   Widget _buildTypeBadge(QuestionType type) {
     final (label, color) = switch (type) {
-      QuestionType.ox => ('O / X', Colors.purple),
-      QuestionType.singleChoice => ('단일 선택', Colors.blue),
+      QuestionType.ox             => ('O / X', Colors.purple),
+      QuestionType.singleChoice   => ('단일 선택', AppColors.blue),
       QuestionType.multipleChoice => ('복수 선택', Colors.orange),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s10, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppSpacing.rXs),
       ),
       child: Text(
         label,
@@ -375,7 +364,7 @@ class _StageScreenState extends State<StageScreen>
     return Row(
       children: [
         Expanded(child: _buildOxButton('O')),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.s12),
         Expanded(child: _buildOxButton('X')),
       ],
     );
@@ -390,46 +379,42 @@ class _StageScreenState extends State<StageScreen>
 
     if (_isSubmitted) {
       if (isCorrect) {
-        bgColor = Colors.green.shade900;
-        borderColor = Colors.green;
-        textColor = Colors.green.shade300;
+        bgColor = AppColors.green900;
+        borderColor = AppColors.green;
+        textColor = AppColors.green300;
       } else if (isSelected) {
         bgColor = Colors.red.shade900;
         borderColor = Colors.red;
         textColor = Colors.red.shade300;
       } else {
-        bgColor = const Color(0xFF1E1E1E);
-        borderColor = const Color(0xFF383838);
-        textColor = const Color(0xFF686868);
+        bgColor = AppColors.surface;
+        borderColor = AppColors.border;
+        textColor = AppColors.textDimmed;
       }
     } else if (isSelected) {
-      bgColor = Colors.blue.shade900;
-      borderColor = Colors.blue;
-      textColor = Colors.blue.shade300;
+      bgColor = AppColors.blue900;
+      borderColor = AppColors.blue;
+      textColor = AppColors.blue300;
     } else {
-      bgColor = const Color(0xFF1E1E1E);
-      borderColor = const Color(0xFF383838);
-      textColor = const Color(0xFF9E9E9E);
+      bgColor = AppColors.surface;
+      borderColor = AppColors.border;
+      textColor = AppColors.textSecondary;
     }
 
     return GestureDetector(
       onTap: () => _toggleSelect(value),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        height: 80,
+        height: AppSpacing.loginIcon,
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppSpacing.rLg),
           border: Border.all(color: borderColor, width: 2),
         ),
         child: Center(
           child: Text(
             value,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
+            style: AppTextStyles.oxButton.copyWith(color: textColor),
           ),
         ),
       ),
@@ -452,64 +437,60 @@ class _StageScreenState extends State<StageScreen>
 
         if (_isSubmitted) {
           if (isCorrect) {
-            bgColor = Colors.green.shade900;
-            borderColor = Colors.green;
-            textColor = Colors.green.shade300;
-            trailingIcon = const Icon(Icons.check_circle, color: Colors.green, size: 20);
+            bgColor = AppColors.green900;
+            borderColor = AppColors.green;
+            textColor = AppColors.green300;
+            trailingIcon = const Icon(Icons.check_circle,
+                color: AppColors.green, size: AppSpacing.iconMd);
           } else if (isSelected) {
             bgColor = Colors.red.shade900;
             borderColor = Colors.red;
             textColor = Colors.red.shade300;
-            trailingIcon = const Icon(Icons.cancel, color: Colors.red, size: 20);
+            trailingIcon = Icon(Icons.cancel,
+                color: Colors.red, size: AppSpacing.iconMd);
           } else {
-            bgColor = const Color(0xFF1E1E1E);
-            borderColor = const Color(0xFF383838);
-            textColor = const Color(0xFF686868);
+            bgColor = AppColors.surface;
+            borderColor = AppColors.border;
+            textColor = AppColors.textDimmed;
           }
         } else if (isSelected) {
-          bgColor = Colors.blue.shade900;
-          borderColor = Colors.blue;
-          textColor = Colors.blue.shade300;
+          bgColor = AppColors.blue900;
+          borderColor = AppColors.blue;
+          textColor = AppColors.blue300;
           trailingIcon = Icon(
             isMultiple ? Icons.check_box : Icons.radio_button_checked,
-            color: Colors.blue,
-            size: 20,
+            color: AppColors.blue,
+            size: AppSpacing.iconMd,
           );
         } else {
-          bgColor = const Color(0xFF1E1E1E);
-          borderColor = const Color(0xFF383838);
-          textColor = const Color(0xFFEEEEEE);
-          trailingIcon = const Icon(
-            Icons.radio_button_unchecked,
-            color: Color(0xFF686868),
-            size: 20,
-          );
+          bgColor = AppColors.surface;
+          borderColor = AppColors.border;
+          textColor = AppColors.textPrimary;
+          trailingIcon = const Icon(Icons.radio_button_unchecked,
+              color: AppColors.textDimmed, size: AppSpacing.iconMd);
         }
 
-        final labels = ['①', '②', '③', '④', '⑤'];
+        const labels = ['①', '②', '③', '④', '⑤'];
 
         return GestureDetector(
           onTap: () => _toggleSelect(choice.id),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            margin: const EdgeInsets.only(bottom: AppSpacing.s10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.s14),
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSpacing.rMd),
               border: Border.all(color: borderColor, width: 1.5),
             ),
             child: Row(
               children: [
                 Text(
                   labels[i],
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                  ),
+                  style: AppTextStyles.titleSmall.copyWith(color: textColor),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: Text(
                     choice.text,
@@ -528,21 +509,22 @@ class _StageScreenState extends State<StageScreen>
   Widget _buildHintBox(String hint) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.s14),
       decoration: BoxDecoration(
-        color: const Color(0xFF2A2000),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.shade200),
+        color: AppColors.hintBg,
+        borderRadius: BorderRadius.circular(AppSpacing.rMd),
+        border: Border.all(color: AppColors.amber200),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.lightbulb_outline, color: Colors.amber.shade700, size: 18),
-          const SizedBox(width: 8),
+          Icon(Icons.lightbulb_outline,
+              color: AppColors.amber700, size: AppSpacing.icon18),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               hint,
-              style: TextStyle(fontSize: 13, color: Colors.amber.shade900),
+              style: const TextStyle(fontSize: 13, color: AppColors.amber900),
             ),
           ),
         ],
@@ -554,17 +536,18 @@ class _StageScreenState extends State<StageScreen>
     final correct = _isCorrect;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.s14),
       decoration: BoxDecoration(
-        color: correct ? Colors.green.shade900 : Colors.red.shade900,
-        borderRadius: BorderRadius.circular(12),
+        color: correct ? AppColors.green900 : Colors.red.shade900,
+        borderRadius: BorderRadius.circular(AppSpacing.rMd),
         border: Border.all(
-          color: correct ? Colors.green.shade200 : Colors.red.shade200,
+          color: correct ? AppColors.green300 : Colors.red.shade200,
         ),
         boxShadow: [
           BoxShadow(
-            color: (correct ? Colors.green : Colors.red).withValues(alpha: 0.3),
-            blurRadius: 12,
+            color: (correct ? AppColors.green : Colors.red)
+                .withValues(alpha: 0.3),
+            blurRadius: AppSpacing.s12,
             spreadRadius: 1,
           ),
         ],
@@ -573,16 +556,16 @@ class _StageScreenState extends State<StageScreen>
         children: [
           Icon(
             correct ? Icons.check_circle_outline : Icons.highlight_off,
-            color: correct ? Colors.green : Colors.red,
-            size: 22,
+            color: correct ? AppColors.green : Colors.red,
+            size: AppSpacing.icon22,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             correct ? '정답입니다!' : '오답입니다.',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: correct ? Colors.green.shade300 : Colors.red.shade300,
+              color: correct ? AppColors.green300 : Colors.red.shade300,
             ),
           ),
         ],
@@ -592,13 +575,14 @@ class _StageScreenState extends State<StageScreen>
 
   Widget _buildBottomBar() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.s12, AppSpacing.md, AppSpacing.s28),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 8,
+            blurRadius: AppSpacing.sm,
             offset: const Offset(0, -2),
           ),
         ],
@@ -610,22 +594,21 @@ class _StageScreenState extends State<StageScreen>
               onPressed: () => setState(() => _showHint = !_showHint),
               icon: Icon(
                 _showHint ? Icons.lightbulb : Icons.lightbulb_outline,
-                size: 18,
+                size: AppSpacing.icon18,
               ),
               label: const Text('힌트'),
               style: TextButton.styleFrom(
-                foregroundColor: Colors.amber.shade700,
-              ),
+                  foregroundColor: AppColors.amber700),
             ),
           const Spacer(),
           if (!_isSubmitted)
             ElevatedButton(
               onPressed: _currentSelected.isNotEmpty ? _submit : null,
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl, vertical: AppSpacing.s14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(AppSpacing.rMd)),
               ),
               child: const Text('확인', style: TextStyle(fontSize: 15)),
             )
@@ -633,11 +616,12 @@ class _StageScreenState extends State<StageScreen>
             ElevatedButton(
               onPressed: _next,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isLast ? Colors.green : Colors.blue,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                backgroundColor:
+                    _isLast ? AppColors.green : AppColors.blue,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl, vertical: AppSpacing.s14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(AppSpacing.rMd)),
               ),
               child: Text(
                 _isLast ? '완료' : '다음',

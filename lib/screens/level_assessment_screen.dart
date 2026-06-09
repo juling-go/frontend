@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_text_styles.dart';
 
 class LevelAssessmentScreen extends StatelessWidget {
   const LevelAssessmentScreen({super.key});
@@ -9,7 +10,7 @@ class LevelAssessmentScreen extends StatelessWidget {
       child: Text(
         '수준평가 뷰\nPlaceholder',
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 18, color: Color(0xFF9E9E9E)),
+        style: AppTextStyles.headingMedium,
       ),
     );
   }

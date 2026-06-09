@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import '../theme/app_decorations.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
+import '../theme/app_theme.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -9,80 +12,62 @@ class ProfileScreen extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 32),
+          const SizedBox(height: AppSpacing.xl),
           Center(
             child: Container(
-              width: 96,
-              height: 96,
+              width: AppSpacing.avatarSize,
+              height: AppSpacing.avatarSize,
               decoration: const BoxDecoration(
-                color: Colors.blue,
+                color: AppColors.blue,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.person,
                 color: Colors.white,
-                size: 48,
+                size: AppSpacing.icon48,
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Mock User',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.md),
+          const Text('Mock User', style: AppTextStyles.displayLarge),
+          const SizedBox(height: AppSpacing.lg),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Container(
               width: double.infinity,
               decoration: card3D(),
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(AppSpacing.s20),
               child: Column(
                 children: [
                   Row(
                     children: [
                       const Expanded(
-                        child: Text(
-                          '학습 등급',
-                          style: TextStyle(fontSize: 16, color: Color(0xFF9E9E9E)),
-                        ),
+                        child: Text('학습 등급', style: AppTextStyles.dimmedLabel),
                       ),
-                      Row(
-                        children: const [
-                          Icon(Icons.emoji_events, color: Colors.orange),
-                          SizedBox(width: 8),
-                          Text(
-                            '골드',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
+                      const Icon(Icons.emoji_events, color: Colors.orange),
+                      const SizedBox(width: AppSpacing.sm),
+                      const Text('골드', style: AppTextStyles.titleMedium),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   Row(
                     children: [
                       const Expanded(
-                        child: Text(
-                          '학습 목표',
-                          style: TextStyle(fontSize: 16, color: Color(0xFF9E9E9E)),
-                        ),
+                        child: Text('학습 목표', style: AppTextStyles.dimmedLabel),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s14, vertical: AppSpacing.s10),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade900,
-                          borderRadius: BorderRadius.circular(12.0),
-                          border: Border.all(color: Colors.blue.shade700, width: 1),
+                          color: AppColors.blue900,
+                          borderRadius: BorderRadius.circular(AppSpacing.rMd),
+                          border: Border.all(color: AppColors.blue700),
                         ),
-                        child: Text(
+                        child: const Text(
                           '고수 투자자',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.blue.shade300,
+                            color: AppColors.blue300,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -93,88 +78,68 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.lg),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Container(
               width: double.infinity,
-              decoration: card3D(),
               height: 160,
+              decoration: card3D(),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          '학습한 섹션 수',
-                          style: TextStyle(fontSize: 16, color: Color(0xFF9E9E9E)),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                            child: Text(
-                              '8',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  Expanded(child: _StatColumn(label: '학습한 섹션 수', value: '8')),
                   Container(
                     width: 1,
                     height: 120,
-                    color: const Color(0xFF383838),
+                    color: AppColors.border,
                   ),
                   Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          '학습한 스테이지 수',
-                          style: TextStyle(fontSize: 16, color: Color(0xFF9E9E9E)),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                            child: Text(
-                              '24',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _StatColumn(label: '학습한 스테이지 수', value: '24'),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 36),
+          const SizedBox(height: AppSpacing.s36),
         ],
       ),
+    );
+  }
+}
+
+class _StatColumn extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatColumn({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(label,
+            style: AppTextStyles.dimmedLabel, textAlign: TextAlign.center),
+        const SizedBox(height: AppSpacing.s12),
+        Container(
+          width: AppSpacing.statCircle,
+          height: AppSpacing.statCircle,
+          decoration: const BoxDecoration(
+            color: AppColors.blue,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: AppSpacing.lg,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
