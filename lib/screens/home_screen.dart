@@ -3,6 +3,8 @@ import '../models/curriculum.dart';
 import '../models/section.dart';
 import '../models/stage.dart';
 import '../services/section_service.dart';
+import '../theme/app_decorations.dart';
+import '../theme/app_transitions.dart';
 import 'content_screen.dart';
 import 'curriculum_screen.dart';
 import 'level_assessment_screen.dart';
@@ -99,8 +101,16 @@ class _HomeScreenState extends State<HomeScreen> {
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 60),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF282828), Color(0xFF181818)],
+            ),
             borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              const BoxShadow(color: Color(0xFF3D3D3D), blurRadius: 4, offset: Offset(-2, -2)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.7), blurRadius: 20, offset: const Offset(6, 10)),
+            ],
           ),
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -113,16 +123,16 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 6),
               Text(stage.subtitle,
                   style: const TextStyle(
-                      fontSize: 14, color: Colors.black54)),
+                      fontSize: 14, color: Color(0xFF9E9E9E))),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Icon(Icons.access_time,
-                      size: 16, color: Colors.grey.shade500),
+                  const Icon(Icons.access_time,
+                      size: 16, color: Color(0xFF686868)),
                   const SizedBox(width: 6),
                   Text('예상 시간: ${stage.estimatedMinutes}분',
                       style: const TextStyle(
-                          fontSize: 13, color: Colors.black54)),
+                          fontSize: 13, color: Color(0xFF9E9E9E))),
                 ],
               ),
               if (stage.learningObjective.isNotEmpty) ...[
@@ -134,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(stage.learningObjective,
                     style: const TextStyle(
                         fontSize: 13,
-                        color: Colors.black54,
+                        color: Color(0xFF9E9E9E),
                         height: 1.4)),
               ],
               const SizedBox(height: 24),
@@ -149,10 +159,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ElevatedButton(
                     onPressed: () async {
                       Navigator.pop(context);
-                      final completed = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => StageScreen(stage: stage),
-                        ),
+                      final completed = await pushWithLoadingOverlay<bool>(
+                        context: context,
+                        destination: StageScreen(stage: stage),
+                        title: stage.title,
+                        subtitle: stage.subtitle,
                       );
                       if (completed == true && mounted) {
                         setState(() {
@@ -185,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
         activeCurriculum: _activeCurriculum,
         completedNodeIds: _completedNodeIds,
         onCurriculumSelected: _onCurriculumSelected,
+        onNavigateToHome: () => setState(() => _selectedTabIndex = 0),
       ),
       const ContentScreen(),
       const LevelAssessmentScreen(),
@@ -192,11 +204,18 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
-      body: pages[_selectedTabIndex],
+      body: AnimatedSwitcher(
+        duration: kTabTransitionDuration,
+        transitionBuilder: tabTransitionBuilder,
+        child: KeyedSubtree(
+          key: ValueKey(_selectedTabIndex),
+          child: pages[_selectedTabIndex],
+        ),
+      ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(height: 1, color: Colors.grey.shade300),
+          Container(height: 1, color: const Color(0xFF2E2E2E)),
           BottomNavigationBar(
             currentIndex: _selectedTabIndex,
             onTap: _onTabSelected,
@@ -241,39 +260,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHomeView() {
     return Column(
       children: [
-        // 커리큘럼 배너 (진행 중일 때만 표시)
-        if (_activeCurriculum != null) _buildCurriculumBanner(),
-        // 섹션 정보 + 스테이지 목록
         Expanded(child: _buildSectionBody()),
       ],
-    );
-  }
-
-  Widget _buildCurriculumBanner() {
-    return GestureDetector(
-      onTap: () => setState(() => _selectedTabIndex = 1),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        color: Colors.blue.shade600,
-        child: Row(
-          children: [
-            const Icon(Icons.school_outlined, color: Colors.white, size: 16),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _activeCurriculum!.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.white70, size: 16),
-          ],
-        ),
-      ),
     );
   }
 
@@ -297,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('커리큘럼을 선택하면 학습을 시작할 수 있습니다.',
-                style: TextStyle(color: Colors.black54)),
+                style: TextStyle(color: Color(0xFF9E9E9E))),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () => setState(() => _selectedTabIndex = 1),
@@ -316,12 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final currentIdx = _currentStageIndex;
     return Column(
       children: [
-        _buildSectionInfoCard(
-          subject: node.subject,
-          chapter: node.chapter,
-          sectionName: node.title,
-          description: node.description,
-        ),
+        _buildCurriculumSectionHeader(node),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -395,6 +378,82 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── 공통 위젯 ────────────────────────────────────────────────
 
+  Widget _buildCurriculumSectionHeader(CurriculumNode node) {
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTabIndex = 1),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        padding: const EdgeInsets.all(18),
+        decoration: card3D(radius: BorderRadius.circular(20)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.school_outlined, color: Colors.blue, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _activeCurriculum!.name,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Color(0xFF686868), size: 20),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF232323), Color(0xFF141414)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF383838)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 6,
+                    offset: const Offset(2, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${node.subject}  >  ${node.chapter}',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF8A8A8A)),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    node.title,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    node.description,
+                    style: const TextStyle(
+                        fontSize: 13, color: Color(0xFF9E9E9E), height: 1.4),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionInfoCard({
     required String subject,
     required String chapter,
@@ -402,23 +461,15 @@ class _HomeScreenState extends State<HomeScreen> {
     required String description,
   }) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius:
-            BorderRadius.vertical(bottom: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black12, blurRadius: 10, offset: Offset(0, 3)),
-        ],
-      ),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(18),
+      decoration: card3D(radius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '$subject  >  $chapter',
-            style: const TextStyle(fontSize: 12, color: Colors.black45),
+            style: const TextStyle(fontSize: 12, color: Color(0xFF8A8A8A)),
           ),
           const SizedBox(height: 6),
           Text(
@@ -429,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             description,
             style: const TextStyle(
-                fontSize: 13, color: Colors.black54, height: 1.4),
+                fontSize: 13, color: Color(0xFF9E9E9E), height: 1.4),
           ),
         ],
       ),
@@ -444,19 +495,19 @@ class _HomeScreenState extends State<HomeScreen> {
     required bool isLocked,
     required VoidCallback onTap,
   }) {
-    final Color dotColor = isCompleted
-        ? Colors.green
-        : isCurrent
-            ? Colors.blue
-            : Colors.grey.shade300;
-
     final Color borderColor = isCompleted
-        ? Colors.green.shade100
+        ? Colors.green.shade900
         : isCurrent
-            ? Colors.blue.shade100
-            : Colors.grey.shade200;
+            ? Colors.blue.shade900
+            : const Color(0xFF2E2E2E);
 
-    final Color bgColor = isLocked ? Colors.grey.shade50 : Colors.white;
+    final List<Color> bgGradient = isLocked
+        ? [const Color(0xFF1C1C1C), const Color(0xFF111111)]
+        : isCompleted
+            ? [const Color(0xFF1A2A1A), const Color(0xFF101810)]
+            : isCurrent
+                ? [const Color(0xFF1A1F2A), const Color(0xFF10141A)]
+                : [const Color(0xFF252525), const Color(0xFF161616)];
 
     return GestureDetector(
       onTap: onTap,
@@ -464,64 +515,76 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: bgColor,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: bgGradient,
+          ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: borderColor, width: 1.5),
           boxShadow: isLocked
-              ? null
-              : const [
+              ? [
                   BoxShadow(
-                    color: Color.fromRGBO(0, 0, 0, 0.05),
+                    color: Colors.black.withValues(alpha: 0.35),
                     blurRadius: 6,
-                    offset: Offset(0, 2),
+                    offset: const Offset(2, 3),
+                  ),
+                ]
+              : [
+                  const BoxShadow(
+                    color: Color(0xFF3A3A3A),
+                    blurRadius: 3,
+                    offset: Offset(-1, -1),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    blurRadius: 10,
+                    offset: const Offset(4, 5),
                   ),
                 ],
         ),
         child: Row(
           children: [
-            // 상태 원형 표시
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: dotColor,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: isCompleted
-                    ? const Icon(Icons.check_rounded,
-                        color: Colors.white, size: 20)
-                    : isLocked
-                        ? Icon(Icons.lock_outline,
-                            color: Colors.grey.shade400, size: 18)
-                        : Text(
-                            '${index + 1}',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15),
-                          ),
-              ),
+            // 동전 모양 상태 표시
+            _buildCoinWidget(
+              index: index,
+              isCompleted: isCompleted,
+              isCurrent: isCurrent,
+              isLocked: isLocked,
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
+                    'Stage',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isLocked
+                          ? Color(0xFF565656)
+                          : isCompleted
+                              ? Colors.green.shade600
+                              : Colors.blue.shade600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
                     stage.title,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: isLocked ? Colors.black38 : Colors.black87,
+                      color: isLocked ? Color(0xFF707070) : Color(0xFFEEEEEE),
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     stage.subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: isLocked ? Colors.black26 : Colors.black45,
+                      color: isLocked ? Color(0xFF565656) : Color(0xFF8A8A8A),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -540,6 +603,72 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCoinWidget({
+    required int index,
+    required bool isCompleted,
+    required bool isCurrent,
+    required bool isLocked,
+  }) {
+    final Color faceColor = isCompleted
+        ? Colors.green
+        : isCurrent
+            ? Colors.blue
+            : const Color(0xFF3A3A3A);
+
+    final Color rimColor = isCompleted
+        ? Colors.green.shade700
+        : isCurrent
+            ? Colors.blue.shade700
+            : const Color(0xFF505050);
+
+    final Color shadowColor = isCompleted
+        ? Colors.green.shade900
+        : isCurrent
+            ? Colors.blue.shade900
+            : const Color(0xFF282828);
+
+    final Widget face = isCompleted
+        ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+        : isLocked
+            ? const Icon(Icons.lock_outline, color: Color(0xFF686868), size: 16)
+            : Text(
+                '${index + 1}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              );
+
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: shadowColor,
+        // 하단 그림자로 동전의 두께감 표현
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor.withValues(alpha: 0.5),
+            blurRadius: 4,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: faceColor,
+            border: Border.all(color: rimColor, width: 2),
+          ),
+          child: Center(child: face),
         ),
       ),
     );
