@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../services/auth_service.dart';
+import '../state/app_scope.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
-import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,22 +12,16 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _authService = AuthService();
   bool _isLoading = false;
 
   Future<void> _loginWithProvider(String provider) async {
     setState(() => _isLoading = true);
-    final user = await _authService.login(
-      'mock@email.com',
-      'password',
-      provider: provider,
-    );
+    final user = await AppScope.of(context).auth.login(provider);
+    if (!mounted) return;
     setState(() => _isLoading = false);
-    if (user != null && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } else if (mounted) {
+    // 로그인에 성공하면 AuthRepository의 알림을 받아 루트가 HomeScreen으로
+    // 교체되므로, 여기서 직접 화면을 밀어 넣지 않습니다.
+    if (user == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('로그인 실패')));
     }
@@ -65,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Spacer(flex: 3),
               const Text(
                 '서비스 계정으로 로그인 또는 회원가입',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: AppTextStyles.dimmedLabel,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.xl),

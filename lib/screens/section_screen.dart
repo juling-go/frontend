@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/curriculum.dart';
 import '../models/stage.dart';
+import '../models/stage_result.dart';
+import '../state/app_scope.dart';
+import '../state/progress_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -8,17 +11,15 @@ import '../theme/app_transitions.dart';
 import 'stage_screen.dart';
 
 class SectionScreen extends StatefulWidget {
-  final CurriculumNode node;
+  final String curriculumId;
   final String curriculumName;
-  final Set<String> completedStageIds;
-  final void Function(String stageId) onStageCompleted;
+  final CurriculumNode node;
 
   const SectionScreen({
     super.key,
-    required this.node,
+    required this.curriculumId,
     required this.curriculumName,
-    required this.completedStageIds,
-    required this.onStageCompleted,
+    required this.node,
   });
 
   @override
@@ -26,13 +27,16 @@ class SectionScreen extends StatefulWidget {
 }
 
 class _SectionScreenState extends State<SectionScreen> {
-  late Set<String> _completedStageIds;
+  late ProgressRepository _progress;
 
   @override
-  void initState() {
-    super.initState();
-    _completedStageIds = Set.from(widget.completedStageIds);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _progress = AppScope.of(context).progress;
   }
+
+  Set<String> get _completedStageIds =>
+      _progress.completedStageIds(widget.curriculumId);
 
   int get _currentStageIndex {
     final idx = widget.node.stages
@@ -101,15 +105,27 @@ class _SectionScreenState extends State<SectionScreen> {
                   ElevatedButton(
                     onPressed: () async {
                       Navigator.pop(context);
-                      final completed = await pushWithLoadingOverlay<bool>(
+                      final result =
+                          await pushWithLoadingOverlay<StageResult>(
                         context: context,
                         destination: StageScreen(stage: stage),
                         title: stage.title,
                         subtitle: stage.subtitle,
                       );
-                      if (completed == true && mounted) {
-                        setState(() => _completedStageIds.add(stage.id));
-                        widget.onStageCompleted(stage.id);
+                      if (!mounted || result == null) return;
+                      // 합격선(정답률 60%)을 넘겨야 스테이지가 완료됩니다.
+                      if (result.passed) {
+                        await _progress.markStageCompleted(
+                            widget.curriculumId, stage.id);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '정답률 ${result.percent}% — '
+                              '${(kStagePassRatio * 100).round()}% 이상이어야 완료됩니다.',
+                            ),
+                          ),
+                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -130,6 +146,13 @@ class _SectionScreenState extends State<SectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: _progress,
+      builder: (context, _) => _buildContent(context),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final node = widget.node;
     final currentIdx = _currentStageIndex;
 

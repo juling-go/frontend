@@ -1,273 +1,244 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import '../models/user.dart';
-import 'login_screen.dart';
 
-class SettingsScreen extends StatefulWidget {
+import '../state/app_scope.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
+import '../theme/app_theme.dart';
+
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
+  /// 로그아웃 및 회원탈퇴 공통 처리.
+  ///
+  /// 저장된 로그인 정보와 학습 진행률을 모두 비웁니다. 로그아웃이 끝나면
+  /// [AppScope]의 `auth`가 알림을 보내 루트가 로그인 화면으로 바뀌므로,
+  /// 여기서는 쌓여 있던 라우트만 정리합니다.
+  Future<void> _signOut(BuildContext context) async {
+    final scope = AppScope.of(context);
+    final navigator = Navigator.of(context);
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  final _authService = AuthService();
-  User? _currentUser;
+    await scope.progress.clearAll();
+    await scope.auth.logout();
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUser();
+    navigator.popUntil((route) => route.isFirst);
   }
 
-  Future<void> _loadUser() async {
-    final user = _authService.getCurrentUser();
-    setState(() {
-      _currentUser = user;
-    });
-  }
-
-  Future<void> _logout() async {
-    await _authService.logout();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-    }
-  }
-
-  void _showDeleteAccountDialog() {
-    showDialog(
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surface,
         title: const Text('회원탈퇴'),
         content: const Text('정말로 회원탈퇴를 진행하시겠습니까? 이 작업은 되돌릴 수 없습니다.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('취소'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Mock delete account
-              _logout();
-            },
+            onPressed: () => Navigator.pop(dialogContext, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('탈퇴'),
           ),
         ],
       ),
     );
+
+    if (confirmed != true || !context.mounted) return;
+    await _signOut(context);
   }
 
-  void _showHelpCenter() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('도움말 센터로 이동합니다 (Mock)')),
-    );
-  }
-
-  void _showFeedback() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('피드백 페이지로 이동합니다 (Mock)')),
-    );
-  }
-
-  void _showTerms() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('이용약관을 표시합니다 (Mock)')),
-    );
-  }
-
-  void _showPrivacyPolicy() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('개인정보처리방침을 표시합니다 (Mock)')),
-    );
-  }
-
-  void _showDataSources() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('자료출처 정보를 표시합니다 (Mock)')),
-    );
+  void _showMockNotice(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('$message (Mock)')));
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = AppScope.of(context).auth;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('설정'),
-      ),
-      body: ListView(
-        children: [
-          // 계정 섹션
-          Container(
-            margin: const EdgeInsets.all(16.0),
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12.0),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color.fromRGBO(128, 128, 128, 0.1),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: Offset(0, 2),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text('설정')),
+      body: ListenableBuilder(
+        listenable: auth,
+        builder: (context, _) {
+          final user = auth.currentUser;
+          final joinDate = user?.joinDate;
+
+          return ListView(
+            children: [
+              // ── 계정 ─────────────────────────────────────────
+              Container(
+                margin: const EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: card3D(
+                  radius: BorderRadius.circular(AppSpacing.rMd),
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '계정',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildAccountItem('닉네임', _currentUser?.name ?? '로딩중...'),
-                _buildAccountItem('로그인 방식', _currentUser?.loginProvider == 'kakao' ? '카카오' : '구글'),
-                _buildAccountItem('이메일', _currentUser?.email ?? '로딩중...'),
-                _buildAccountItem('가입일자', _currentUser != null
-                    ? '${_currentUser!.joinDate.year}.${_currentUser!.joinDate.month.toString().padLeft(2, '0')}.${_currentUser!.joinDate.day.toString().padLeft(2, '0')}'
-                    : '로딩중...'),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: _showDeleteAccountDialog,
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('계정', style: AppTextStyles.headingMedium),
+                    const SizedBox(height: AppSpacing.md),
+                    _AccountItem(label: '닉네임', value: user?.name ?? '-'),
+                    _AccountItem(
+                      label: '로그인 방식',
+                      value: switch (user?.loginProvider) {
+                        'kakao' => '카카오',
+                        'google' => '구글',
+                        _ => '-',
+                      },
                     ),
-                    child: const Text('회원탈퇴'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 지원 섹션
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12.0),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color.fromRGBO(128, 128, 128, 0.1),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    '지원',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    _AccountItem(label: '이메일', value: user?.email ?? '-'),
+                    _AccountItem(
+                      label: '가입일자',
+                      value: joinDate == null ? '-' : _formatDate(joinDate),
                     ),
-                  ),
-                ),
-                _buildSupportItem('도움말 센터', _showHelpCenter),
-                _buildSupportItem('피드백', _showFeedback),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 기타 메뉴들
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              children: [
-                _buildTextButton('규정', _showTerms),
-                _buildTextButton('개인정보처리방침', _showPrivacyPolicy),
-                _buildTextButton('자료출처', _showDataSources),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _logout,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade200,
-                      foregroundColor: Colors.black,
+                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () => _confirmDeleteAccount(context),
+                        style: TextButton.styleFrom(
+                            foregroundColor: Colors.red),
+                        child: const Text('회원탈퇴'),
+                      ),
                     ),
-                    child: const Text('로그아웃'),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          const SizedBox(height: 32),
-        ],
+              // ── 지원 ─────────────────────────────────────────
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                decoration: card3D(
+                  radius: BorderRadius.circular(AppSpacing.rMd),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(AppSpacing.md),
+                      child: Text('지원', style: AppTextStyles.headingMedium),
+                    ),
+                    ListTile(
+                      title: const Text('도움말 센터'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          _showMockNotice(context, '도움말 센터로 이동합니다'),
+                    ),
+                    const Divider(
+                        height: 1,
+                        indent: AppSpacing.md,
+                        endIndent: AppSpacing.md),
+                    ListTile(
+                      title: const Text('피드백'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          _showMockNotice(context, '피드백 페이지로 이동합니다'),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // ── 약관 및 로그아웃 ──────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: Column(
+                  children: [
+                    _LinkButton(
+                      title: '규정',
+                      onTap: () => _showMockNotice(context, '이용약관을 표시합니다'),
+                    ),
+                    _LinkButton(
+                      title: '개인정보처리방침',
+                      onTap: () =>
+                          _showMockNotice(context, '개인정보처리방침을 표시합니다'),
+                    ),
+                    _LinkButton(
+                      title: '자료출처',
+                      onTap: () =>
+                          _showMockNotice(context, '자료출처 정보를 표시합니다'),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => _signOut(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.surfaceElevated,
+                          foregroundColor: AppColors.textPrimary,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.s14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.rMd),
+                          ),
+                        ),
+                        child: const Text('로그아웃'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.xl),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildAccountItem(String label, String value) {
+  static String _formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}.$month.$day';
+  }
+}
+
+class _AccountItem extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _AccountItem({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-            ),
-          ),
+          Text(label, style: AppTextStyles.dimmedLabel),
+          Text(value, style: AppTextStyles.bodyLarge),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSupportItem(String title, VoidCallback onTap) {
-    return Column(
-      children: [
-        ListTile(
-          title: Text(title),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: onTap,
-        ),
-        if (title != '피드백') // 마지막 항목에는 구분선 없음
-          const Divider(height: 1, indent: 16, endIndent: 16),
-      ],
-    );
-  }
+class _LinkButton extends StatelessWidget {
+  final String title;
+  final VoidCallback onTap;
 
-  Widget _buildTextButton(String title, VoidCallback onTap) {
+  const _LinkButton({required this.title, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: TextButton(
         onPressed: onTap,
         style: TextButton.styleFrom(
           alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 0),
+          foregroundColor: AppColors.textPrimary,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         ),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.black,
-          ),
-        ),
+        child: Text(title, style: AppTextStyles.bodyLarge),
       ),
     );
   }

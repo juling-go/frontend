@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../models/stage.dart';
+import '../models/stage_result.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -70,6 +71,10 @@ class _StageScreenState extends State<StageScreen>
   int _qIndex = 0;
   final Map<int, Set<String>> _selected = {};
   final Map<int, bool> _submitted = {};
+
+  /// 문항 index → 정답 여부. 채점 결과의 근거가 됩니다.
+  final Map<int, bool> _results = {};
+
   bool _showHint = false;
   bool? _lastCorrect;
 
@@ -92,6 +97,9 @@ class _StageScreenState extends State<StageScreen>
     return _currentSelected.length == correct.length &&
         _currentSelected.every(correct.contains);
   }
+
+  /// 지금까지 맞힌 문항 수.
+  int get _correctCount => _results.values.where((c) => c).length;
 
   @override
   void initState() {
@@ -150,6 +158,7 @@ class _StageScreenState extends State<StageScreen>
     final correct = _isCorrect;
     setState(() {
       _submitted[_qIndex] = true;
+      _results[_qIndex] = correct;
       _showHint = false;
       _lastCorrect = correct;
     });
@@ -165,18 +174,55 @@ class _StageScreenState extends State<StageScreen>
 
   void _next() {
     if (_isLast) {
-      Navigator.pop(context, true);
+      _finish();
     } else {
       setState(() {
         _qIndex++;
         _showHint = false;
         _lastCorrect = null;
       });
-      _resultController.reset();
-      _shakeController.reset();
-      _flashController.reset();
-      _confettiController.reset();
+      _resetAnimations();
     }
+  }
+
+  void _resetAnimations() {
+    _resultController.reset();
+    _shakeController.reset();
+    _flashController.reset();
+    _confettiController.reset();
+  }
+
+  /// 마지막 문항을 제출한 뒤 채점 결과를 보여주고 화면을 닫습니다.
+  ///
+  /// 합격 여부 판정은 이 결과를 받은 SectionScreen이 [StageResult]로 수행합니다.
+  Future<void> _finish() async {
+    final result = StageResult(
+      total: _questions.length,
+      correct: _correctCount,
+    );
+
+    final action = await showDialog<_FinishAction>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _ResultDialog(result: result),
+    );
+
+    if (!mounted) return;
+
+    if (action == _FinishAction.retry) {
+      setState(() {
+        _qIndex = 0;
+        _selected.clear();
+        _submitted.clear();
+        _results.clear();
+        _showHint = false;
+        _lastCorrect = null;
+      });
+      _resetAnimations();
+      return;
+    }
+
+    Navigator.pop(context, result);
   }
 
   @override
@@ -207,6 +253,22 @@ class _StageScreenState extends State<StageScreen>
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(widget.stage.title, style: AppTextStyles.titleMedium),
+        actions: [
+          if (_results.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.md),
+              child: Center(
+                child: Text(
+                  '$_correctCount / ${_results.length}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.green300,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
           child: LinearProgressIndicator(
@@ -629,6 +691,105 @@ class _StageScreenState extends State<StageScreen>
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+// ── 스테이지 채점 결과 ─────────────────────────────────────────
+
+enum _FinishAction { retry, exit }
+
+class _ResultDialog extends StatelessWidget {
+  final StageResult result;
+
+  const _ResultDialog({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    final passed = result.passed;
+    final accent = passed ? AppColors.green : AppColors.amber700;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s20),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.gradDialog,
+          borderRadius: BorderRadius.circular(AppSpacing.rXl),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.7),
+              blurRadius: AppSpacing.s20,
+              offset: const Offset(6, 10),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              passed ? Icons.emoji_events : Icons.replay_circle_filled_outlined,
+              color: accent,
+              size: AppSpacing.icon48,
+            ),
+            const SizedBox(height: AppSpacing.s12),
+            Text(
+              passed ? '스테이지 완료!' : '조금만 더!',
+              style: AppTextStyles.headingLarge,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '${result.total}문제 중 ${result.correct}문제 정답',
+              style: AppTextStyles.bodyMuted,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppSpacing.rXs),
+              child: LinearProgressIndicator(
+                value: result.ratio,
+                backgroundColor: AppColors.borderDark,
+                valueColor: AlwaysStoppedAnimation<Color>(accent),
+                minHeight: AppSpacing.sm,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '정답률 ${result.percent}%'
+              '${passed ? '' : ' (완료 기준 ${(kStagePassRatio * 100).round()}%)'}',
+              style: AppTextStyles.captionMuted,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () =>
+                        Navigator.pop(context, _FinishAction.retry),
+                    child: const Text('다시 풀기'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () =>
+                        Navigator.pop(context, _FinishAction.exit),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.r10),
+                      ),
+                    ),
+                    child: Text(passed ? '완료' : '나가기'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

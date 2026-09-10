@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/curriculum.dart';
-import '../services/curriculum_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -12,19 +11,26 @@ const _kLabelExtra  = AppSpacing.graphLabelExtra;
 const _kTopPad      = AppSpacing.graphTopPad;
 
 class CurriculumScreen extends StatefulWidget {
+  final List<Curriculum> curriculums;
+  final bool isLoading;
   final Curriculum? activeCurriculum;
-  final Set<String> completedNodeIds;
+
+  /// 커리큘럼마다 완료된 노드 id를 돌려줍니다.
+  /// 상세 뷰는 "진행 중"이 아닌 커리큘럼도 열 수 있으므로,
+  /// 고정된 집합이 아니라 조회 함수를 받습니다.
+  final Set<String> Function(Curriculum) completedNodeIdsOf;
+
   final void Function(Curriculum) onCurriculumSelected;
   final void Function(Curriculum, CurriculumNode)? onNodeTap;
-  final CurriculumService service;
 
   const CurriculumScreen({
     super.key,
+    required this.curriculums,
+    required this.isLoading,
     required this.activeCurriculum,
-    required this.completedNodeIds,
+    required this.completedNodeIdsOf,
     required this.onCurriculumSelected,
     this.onNodeTap,
-    this.service = const MockCurriculumService(),
   });
 
   @override
@@ -32,15 +38,12 @@ class CurriculumScreen extends StatefulWidget {
 }
 
 class _CurriculumScreenState extends State<CurriculumScreen> {
-  List<Curriculum> _curriculums = [];
-  bool _isLoading = true;
   Curriculum? _viewing;
 
   @override
   void initState() {
     super.initState();
     _viewing = widget.activeCurriculum;
-    _loadCurriculums();
   }
 
   @override
@@ -50,18 +53,6 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
         old.activeCurriculum == null &&
         _viewing == null) {
       setState(() => _viewing = widget.activeCurriculum);
-    }
-  }
-
-  Future<void> _loadCurriculums() async {
-    try {
-      final list = await widget.service.fetchCurriculums();
-      setState(() {
-        _curriculums = list;
-        _isLoading = false;
-      });
-    } catch (_) {
-      setState(() => _isLoading = false);
     }
   }
 
@@ -75,7 +66,7 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
     if (_viewing != null) {
       return _CurriculumDetailView(
         curriculum: _viewing!,
-        completedNodeIds: widget.completedNodeIds,
+        completedNodeIds: widget.completedNodeIdsOf(_viewing!),
         isActive: widget.activeCurriculum?.id == _viewing!.id,
         onBack: () => setState(() => _viewing = null),
         onStart: () => _selectCurriculum(_viewing!),
@@ -91,20 +82,21 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
     return Column(
       children: [
         _buildHeader(),
-        if (_isLoading)
+        if (widget.isLoading)
           const Expanded(child: Center(child: CircularProgressIndicator()))
-        else if (_curriculums.isEmpty)
+        else if (widget.curriculums.isEmpty)
           const Expanded(child: Center(child: Text('커리큘럼이 없습니다.')))
         else
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: _curriculums.length,
+              itemCount: widget.curriculums.length,
               itemBuilder: (context, index) => _CurriculumCard(
-                curriculum: _curriculums[index],
+                curriculum: widget.curriculums[index],
                 isActive:
-                    widget.activeCurriculum?.id == _curriculums[index].id,
-                onTap: () => setState(() => _viewing = _curriculums[index]),
+                    widget.activeCurriculum?.id == widget.curriculums[index].id,
+                onTap: () =>
+                    setState(() => _viewing = widget.curriculums[index]),
               ),
             ),
           ),
