@@ -5,12 +5,14 @@
 | 이름 | 파일 | 설명 |
 |---|---|---|
 | LoginScreen | `lib/screens/login_screen.dart` | 소셜 로그인 |
-| HomeScreen | `lib/screens/home_screen.dart` | 탭 진입점, 홈 탭 + BottomNav 포함 |
+| HomeScreen | `lib/screens/home_screen.dart` | 탭 진입점, 커리큘럼 로딩 + BottomNav |
 | CurriculumScreen | `lib/screens/curriculum_screen.dart` | 커리큘럼 목록/상세 |
 | ContentScreen | `lib/screens/content_screen.dart` | 학습 컨텐츠 브라우저 |
 | LevelAssessmentScreen | `lib/screens/level_assessment_screen.dart` | 수준 평가 (미구현) |
 | ProfileScreen | `lib/screens/profile_screen.dart` | 유저 정보 및 통계 |
-| StageScreen | `lib/screens/stage_screen.dart` | 문제 풀이 화면 |
+| SectionScreen | `lib/screens/section_screen.dart` | 섹션(노드)의 스테이지 목록 |
+| StageScreen | `lib/screens/stage_screen.dart` | 문제 풀이 + 채점 |
+| SettingsScreen | `lib/screens/settings_screen.dart` | 계정 정보, 로그아웃, 회원탈퇴 |
 
 ---
 
@@ -97,10 +99,38 @@ LoginScreen
 
 ## 공유 요소
 
-파일: `lib/theme/app_decorations.dart`
+파일: `lib/theme/app_theme.dart`
 
 | 이름 | 설명 |
 |---|---|
 | `card3D()` | 뉴모피즘 카드 데코레이션 (그라디언트 + 듀얼 그림자) |
 | `headerDecoration()` | 화면 상단 헤더 데코레이션 |
 | `raised3DButton()` | 이중 컨테이너 입체 버튼 위젯 |
+
+---
+
+## 상태 (State)
+
+파일: `lib/state/`
+
+| 이름 | 파일 | 설명 |
+|---|---|---|
+| `AppScope` | `app_scope.dart` | 저장소를 위젯 트리에 노출하는 InheritedWidget |
+| `AuthRepository` | `auth_repository.dart` | 로그인 상태 (ChangeNotifier, SharedPreferences 영속) |
+| `ProgressRepository` | `progress_repository.dart` | 커리큘럼별 학습 진행률 (ChangeNotifier, SharedPreferences 영속) |
+
+화면에서 사용하는 방법:
+
+```dart
+final progress = AppScope.of(context).progress;
+return ListenableBuilder(
+  listenable: progress,
+  builder: (context, _) => Text('${progress.totalCompletedStages}'),
+);
+```
+
+### 스테이지 완료 판정
+
+`StageScreen`은 문항별 정답 여부를 모아 `StageResult`를 반환합니다.
+`SectionScreen`은 `StageResult.passed`(정답률 `kStagePassRatio` = 60% 이상)일 때만
+`ProgressRepository.markStageCompleted()`를 호출합니다.
