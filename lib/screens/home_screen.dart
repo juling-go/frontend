@@ -4,7 +4,7 @@ import '../models/curriculum.dart';
 import '../services/curriculum_service.dart';
 import '../state/app_scope.dart';
 import '../state/progress_repository.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_transitions.dart';
 import 'content_screen.dart';
 import 'curriculum_screen.dart';
@@ -105,18 +105,23 @@ class _HomeScreenState extends State<HomeScreen> {
         ];
 
         return Scaffold(
-          body: AnimatedSwitcher(
-            duration: kTabTransitionDuration,
-            transitionBuilder: tabTransitionBuilder,
-            child: KeyedSubtree(
-              key: ValueKey(_selectedTabIndex),
-              child: pages[_selectedTabIndex],
+          // 탭 화면 네 개가 모두 상태바 아래에서 시작하도록 여기서 한 번만
+          // 안전영역을 잡습니다. 하단은 BottomNavigationBar가 처리합니다.
+          body: SafeArea(
+            bottom: false,
+            child: AnimatedSwitcher(
+              duration: kTabTransitionDuration,
+              transitionBuilder: tabTransitionBuilder,
+              child: KeyedSubtree(
+                key: ValueKey(_selectedTabIndex),
+                child: pages[_selectedTabIndex],
+              ),
             ),
           ),
           bottomNavigationBar: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(height: 1, color: AppColors.borderDark),
+              Container(height: 1, color: context.p.borderDark),
               BottomNavigationBar(
                 currentIndex: _selectedTabIndex,
                 onTap: _onTabSelected,

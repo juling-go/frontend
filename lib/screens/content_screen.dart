@@ -49,7 +49,7 @@ class _ContentScreenState extends State<ContentScreen> {
   void _openChapterPopup(ContentChapter chapter) {
     showDialog(
       context: context,
-      barrierColor: AppColors.textSecondary,
+      barrierColor: AppColors.scrim,
       builder: (_) => _ChapterPopup(chapter: chapter),
     );
   }
@@ -90,13 +90,13 @@ class _ContentScreenState extends State<ContentScreen> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.s20, AppSpacing.s20, AppSpacing.s20, AppSpacing.s14),
-      decoration: headerDecoration(),
-      child: const Column(
+      decoration: headerDecoration(context),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('컨텐츠', style: AppTextStyles.displayMedium),
           SizedBox(height: AppSpacing.xs),
-          Text('전체 학습 컨텐츠를 확인하세요', style: AppTextStyles.bodySmallMuted),
+          Text('전체 학습 컨텐츠를 확인하세요', style: AppTextStyles.bodySmallMuted(context)),
         ],
       ),
     );
@@ -173,7 +173,7 @@ class _ChapterCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.s12),
         padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: card3D(),
+        decoration: card3D(context),
         child: Row(
           children: [
             Container(
@@ -187,7 +187,7 @@ class _ChapterCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   '$index',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSpacing.md,
                     fontWeight: FontWeight.bold,
                     color: AppColors.blue300,
@@ -204,7 +204,7 @@ class _ChapterCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     chapter.description,
-                    style: AppTextStyles.bodySmallMuted,
+                    style: AppTextStyles.bodySmallMuted(context),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -212,7 +212,7 @@ class _ChapterCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            const Icon(Icons.chevron_right, color: AppColors.textDimmed),
+            Icon(Icons.chevron_right, color: AppColors.textDimmed),
           ],
         ),
       ),
@@ -277,10 +277,10 @@ class _ChapterPopupState extends State<_ChapterPopup> {
                   AppSpacing.s20, AppSpacing.xs, AppSpacing.s20, AppSpacing.s14),
               child: Text(
                 widget.chapter.description,
-                style: AppTextStyles.bodySmallMuted,
+                style: AppTextStyles.bodySmallMuted(context),
               ),
             ),
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: AppColors.border),
             Flexible(
               child: ListView.builder(
                 padding: const EdgeInsets.all(AppSpacing.s14),
@@ -346,7 +346,7 @@ class _SectionCard extends StatelessWidget {
                       const SizedBox(height: AppSpacing.s3),
                       Text(
                         section.description,
-                        style: AppTextStyles.captionMuted,
+                        style: AppTextStyles.captionMuted(context),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -386,7 +386,7 @@ class _SectionCard extends StatelessWidget {
             ),
           ),
           if (isExpanded) ...[
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: AppColors.border),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.s6),
               child: Column(
@@ -401,7 +401,7 @@ class _SectionCard extends StatelessWidget {
                             Container(
                               width: AppSpacing.s6,
                               height: AppSpacing.s6,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 color: AppColors.blue,
                                 shape: BoxShape.circle,
                               ),
@@ -409,7 +409,7 @@ class _SectionCard extends StatelessWidget {
                             const SizedBox(width: AppSpacing.s10),
                             Text(
                               stage.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 13, color: AppColors.textPrimary),
                             ),
                           ],

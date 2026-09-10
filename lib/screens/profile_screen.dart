@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/curriculum.dart';
 import '../state/app_scope.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_theme.dart';
@@ -18,6 +18,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
+    final p = context.p;
 
     return ListenableBuilder(
       listenable: Listenable.merge([scope.auth, scope.progress]),
@@ -38,8 +39,7 @@ class ProfileScreen extends StatelessWidget {
                       top: AppSpacing.sm, right: AppSpacing.sm),
                   child: IconButton(
                     tooltip: '설정',
-                    icon: const Icon(Icons.settings_outlined,
-                        color: AppColors.textSecondary),
+                    icon: Icon(Icons.settings_outlined, color: p.textSecondary),
                     onPressed: () => Navigator.of(context)
                         .push(slideUpRoute(const SettingsScreen())),
                   ),
@@ -49,13 +49,13 @@ class ProfileScreen extends StatelessWidget {
                 child: Container(
                   width: AppSpacing.avatarSize,
                   height: AppSpacing.avatarSize,
-                  decoration: const BoxDecoration(
-                    color: AppColors.blue,
+                  decoration: BoxDecoration(
+                    color: p.blue,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.person,
-                    color: Colors.white,
+                    color: p.onAccent,
                     size: AppSpacing.icon48,
                   ),
                 ),
@@ -63,21 +63,23 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               Text(user?.name ?? '게스트', style: AppTextStyles.displayLarge),
               const SizedBox(height: AppSpacing.lg),
+
+              // ── 등급 · 목표 ──────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Container(
                   width: double.infinity,
-                  decoration: card3D(),
+                  decoration: card3D(context),
                   padding: const EdgeInsets.all(AppSpacing.s20),
                   child: Column(
                     children: [
                       Row(
                         children: [
-                          const Expanded(
-                            child:
-                                Text('학습 등급', style: AppTextStyles.dimmedLabel),
+                          Expanded(
+                            child: Text('학습 등급',
+                                style: AppTextStyles.dimmedLabel(context)),
                           ),
-                          const Icon(Icons.emoji_events, color: Colors.orange),
+                          Icon(Icons.emoji_events, color: p.amber700),
                           const SizedBox(width: AppSpacing.sm),
                           Text(
                             _gradeFor(completedStages),
@@ -88,25 +90,24 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(height: AppSpacing.md),
                       Row(
                         children: [
-                          const Expanded(
-                            child:
-                                Text('학습 목표', style: AppTextStyles.dimmedLabel),
+                          Expanded(
+                            child: Text('학습 목표',
+                                style: AppTextStyles.dimmedLabel(context)),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.s14,
                                 vertical: AppSpacing.s10),
                             decoration: BoxDecoration(
-                              color: AppColors.blue900,
+                              color: p.blue900,
                               borderRadius:
                                   BorderRadius.circular(AppSpacing.rMd),
-                              border: Border.all(color: AppColors.blue700),
+                              border: Border.all(color: p.blue700),
                             ),
-                            child: const Text(
+                            child: Text(
                               '고수 투자자',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.blue300,
+                              style: AppTextStyles.body.copyWith(
+                                color: p.blue300,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -118,32 +119,36 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
+
+              // ── 학습량 ──────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Container(
                   width: double.infinity,
-                  height: 160,
-                  decoration: card3D(),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _StatColumn(
-                          label: '학습한 섹션 수',
-                          value: '$completedSections',
+                  // 고정 높이를 두지 않습니다. 시스템 글자 크기를 키워도
+                  // 카드가 늘어날 뿐 잘리지 않습니다.
+                  decoration: card3D(context),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _StatColumn(
+                            label: '학습한 섹션 수',
+                            value: '$completedSections',
+                          ),
                         ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 120,
-                        color: AppColors.border,
-                      ),
-                      Expanded(
-                        child: _StatColumn(
-                          label: '학습한 스테이지 수',
-                          value: '$completedStages',
+                        Container(width: 1, color: p.border),
+                        Expanded(
+                          child: _StatColumn(
+                            label: '학습한 스테이지 수',
+                            value: '$completedStages',
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -173,30 +178,43 @@ class _StatColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.p;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(label,
-            style: AppTextStyles.dimmedLabel, textAlign: TextAlign.center),
+        Text(
+          label,
+          style: AppTextStyles.dimmedLabel(context),
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: AppSpacing.s12),
-        Container(
-          width: AppSpacing.statCircle,
-          height: AppSpacing.statCircle,
-          decoration: const BoxDecoration(
-            color: AppColors.blue,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
+        if (p.isFlat)
+          // 플랫에서는 숫자 자체를 크게 씁니다. 원을 씌우면 큰 숫자가
+          // 원 밖으로 밀려나기 때문입니다.
+          Text(
+            value,
+            style: AppTextStyles.displayLarge.copyWith(
+              fontSize: 34,
+              height: 1.2,
+              letterSpacing: -0.5,
+              color: p.blue,
+            ),
+          )
+        else
+          Container(
+            width: AppSpacing.statCircle,
+            height: AppSpacing.statCircle,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: p.blue,
+              shape: BoxShape.circle,
+            ),
             child: Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: AppSpacing.lg,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTextStyles.displayLarge.copyWith(color: p.onAccent),
             ),
           ),
-        ),
       ],
     );
   }

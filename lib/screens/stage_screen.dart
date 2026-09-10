@@ -260,7 +260,7 @@ class _StageScreenState extends State<StageScreen>
               child: Center(
                 child: Text(
                   '$_correctCount / ${_results.length}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     color: AppColors.green300,
                     fontWeight: FontWeight.w600,
@@ -274,7 +274,7 @@ class _StageScreenState extends State<StageScreen>
           child: LinearProgressIndicator(
             value: progress,
             backgroundColor: AppColors.borderDark,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.blue),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.blue),
             minHeight: 4,
           ),
         ),
@@ -291,7 +291,7 @@ class _StageScreenState extends State<StageScreen>
                     children: [
                       Text(
                         '${_qIndex + 1} / ${_questions.length}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           color: AppColors.blue600,
                           fontWeight: FontWeight.w600,
@@ -361,7 +361,7 @@ class _StageScreenState extends State<StageScreen>
               if (alpha <= 0 || _lastCorrect == null) {
                 return const SizedBox.shrink();
               }
-              final color = _lastCorrect! ? Colors.green : Colors.red;
+              final color = _lastCorrect! ? AppColors.green : AppColors.danger;
               return IgnorePointer(
                 child: Container(color: color.withValues(alpha: alpha)),
               );
@@ -394,7 +394,7 @@ class _StageScreenState extends State<StageScreen>
     final (label, color) = switch (type) {
       QuestionType.ox             => ('O / X', Colors.purple),
       QuestionType.singleChoice   => ('단일 선택', AppColors.blue),
-      QuestionType.multipleChoice => ('복수 선택', Colors.orange),
+      QuestionType.multipleChoice => ('복수 선택', AppColors.amber700),
     };
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -445,9 +445,9 @@ class _StageScreenState extends State<StageScreen>
         borderColor = AppColors.green;
         textColor = AppColors.green300;
       } else if (isSelected) {
-        bgColor = Colors.red.shade900;
-        borderColor = Colors.red;
-        textColor = Colors.red.shade300;
+        bgColor = AppColors.dangerContainer;
+        borderColor = AppColors.danger;
+        textColor = AppColors.onDangerContainer;
       } else {
         bgColor = AppColors.surface;
         borderColor = AppColors.border;
@@ -502,14 +502,14 @@ class _StageScreenState extends State<StageScreen>
             bgColor = AppColors.green900;
             borderColor = AppColors.green;
             textColor = AppColors.green300;
-            trailingIcon = const Icon(Icons.check_circle,
+            trailingIcon = Icon(Icons.check_circle,
                 color: AppColors.green, size: AppSpacing.iconMd);
           } else if (isSelected) {
-            bgColor = Colors.red.shade900;
-            borderColor = Colors.red;
-            textColor = Colors.red.shade300;
+            bgColor = AppColors.dangerContainer;
+            borderColor = AppColors.danger;
+            textColor = AppColors.onDangerContainer;
             trailingIcon = Icon(Icons.cancel,
-                color: Colors.red, size: AppSpacing.iconMd);
+                color: AppColors.danger, size: AppSpacing.iconMd);
           } else {
             bgColor = AppColors.surface;
             borderColor = AppColors.border;
@@ -528,7 +528,7 @@ class _StageScreenState extends State<StageScreen>
           bgColor = AppColors.surface;
           borderColor = AppColors.border;
           textColor = AppColors.textPrimary;
-          trailingIcon = const Icon(Icons.radio_button_unchecked,
+          trailingIcon = Icon(Icons.radio_button_unchecked,
               color: AppColors.textDimmed, size: AppSpacing.iconMd);
         }
 
@@ -586,7 +586,7 @@ class _StageScreenState extends State<StageScreen>
           Expanded(
             child: Text(
               hint,
-              style: const TextStyle(fontSize: 13, color: AppColors.amber900),
+              style: TextStyle(fontSize: 13, color: AppColors.amber900),
             ),
           ),
         ],
@@ -600,14 +600,14 @@ class _StageScreenState extends State<StageScreen>
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.s14),
       decoration: BoxDecoration(
-        color: correct ? AppColors.green900 : Colors.red.shade900,
+        color: correct ? AppColors.green900 : AppColors.dangerContainer,
         borderRadius: BorderRadius.circular(AppSpacing.rMd),
         border: Border.all(
-          color: correct ? AppColors.green300 : Colors.red.shade200,
+          color: correct ? AppColors.green300 : AppColors.onDangerContainer,
         ),
         boxShadow: [
           BoxShadow(
-            color: (correct ? AppColors.green : Colors.red)
+            color: (correct ? AppColors.green : AppColors.danger)
                 .withValues(alpha: 0.3),
             blurRadius: AppSpacing.s12,
             spreadRadius: 1,
@@ -618,7 +618,7 @@ class _StageScreenState extends State<StageScreen>
         children: [
           Icon(
             correct ? Icons.check_circle_outline : Icons.highlight_off,
-            color: correct ? AppColors.green : Colors.red,
+            color: correct ? AppColors.green : AppColors.danger,
             size: AppSpacing.icon22,
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -627,7 +627,7 @@ class _StageScreenState extends State<StageScreen>
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: correct ? AppColors.green300 : Colors.red.shade300,
+              color: correct ? AppColors.green300 : AppColors.onDangerContainer,
             ),
           ),
         ],
@@ -743,7 +743,7 @@ class _ResultDialog extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               '${result.total}문제 중 ${result.correct}문제 정답',
-              style: AppTextStyles.bodyMuted,
+              style: AppTextStyles.bodyMuted(context),
             ),
             const SizedBox(height: AppSpacing.md),
             ClipRRect(
@@ -759,7 +759,7 @@ class _ResultDialog extends StatelessWidget {
             Text(
               '정답률 ${result.percent}%'
               '${passed ? '' : ' (완료 기준 ${(kStagePassRatio * 100).round()}%)'}',
-              style: AppTextStyles.captionMuted,
+              style: AppTextStyles.captionMuted(context),
             ),
             const SizedBox(height: AppSpacing.lg),
             Row(

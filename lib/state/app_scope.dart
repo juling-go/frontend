@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'auth_repository.dart';
 import 'progress_repository.dart';
+import 'skin_controller.dart';
 
 /// 앱 전역 저장소를 위젯 트리에 노출합니다.
 ///
@@ -18,11 +19,13 @@ import 'progress_repository.dart';
 class AppScope extends InheritedWidget {
   final AuthRepository auth;
   final ProgressRepository progress;
+  final SkinController skin;
 
   const AppScope({
     super.key,
     required this.auth,
     required this.progress,
+    required this.skin,
     required super.child,
   });
 
@@ -34,6 +37,8 @@ class AppScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AppScope oldWidget) {
-    return auth != oldWidget.auth || progress != oldWidget.progress;
+    return auth != oldWidget.auth ||
+        progress != oldWidget.progress ||
+        skin != oldWidget.skin;
   }
 }

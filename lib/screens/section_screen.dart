@@ -56,7 +56,7 @@ class _SectionScreenState extends State<SectionScreen> {
             gradient: AppColors.gradDialog,
             borderRadius: BorderRadius.circular(AppSpacing.rXl),
             boxShadow: [
-              const BoxShadow(
+              BoxShadow(
                   color: AppColors.borderHighlight,
                   blurRadius: 4,
                   offset: Offset(-2, -2)),
@@ -73,16 +73,16 @@ class _SectionScreenState extends State<SectionScreen> {
             children: [
               Text(stage.title, style: AppTextStyles.headingLarge),
               const SizedBox(height: AppSpacing.s6),
-              Text(stage.subtitle, style: AppTextStyles.bodyMuted),
+              Text(stage.subtitle, style: AppTextStyles.bodyMuted(context)),
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
-                  const Icon(Icons.access_time,
+                  Icon(Icons.access_time,
                       size: AppSpacing.iconXs, color: AppColors.textDimmed),
                   const SizedBox(width: AppSpacing.s6),
                   Text(
                     '예상 시간: ${stage.estimatedMinutes}분',
-                    style: AppTextStyles.bodySmallMuted,
+                    style: AppTextStyles.bodySmallMuted(context),
                   ),
                 ],
               ),
@@ -91,7 +91,7 @@ class _SectionScreenState extends State<SectionScreen> {
                 const Text('학습 목표', style: AppTextStyles.bodySmall),
                 const SizedBox(height: AppSpacing.xs),
                 Text(stage.learningObjective,
-                    style: AppTextStyles.bodySmallMuted),
+                    style: AppTextStyles.bodySmallMuted(context)),
               ],
               const SizedBox(height: AppSpacing.lg),
               Row(
@@ -204,7 +204,7 @@ class _SectionScreenState extends State<SectionScreen> {
               color: Colors.black.withValues(alpha: 0.55),
               blurRadius: AppSpacing.s12,
               offset: const Offset(0, 5)),
-          const BoxShadow(
+          BoxShadow(
               color: AppColors.borderHighlightDim,
               blurRadius: AppSpacing.xs,
               offset: Offset(-1, -1)),
@@ -224,7 +224,7 @@ class _SectionScreenState extends State<SectionScreen> {
                     minWidth: AppSpacing.s36, minHeight: AppSpacing.s36),
               ),
               const SizedBox(width: AppSpacing.xs),
-              const Icon(Icons.school_outlined,
+              Icon(Icons.school_outlined,
                   color: AppColors.blue, size: AppSpacing.iconMd),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
@@ -257,14 +257,14 @@ class _SectionScreenState extends State<SectionScreen> {
               children: [
                 Text(
                   '${node.subject}  >  ${node.chapter}',
-                  style: AppTextStyles.breadcrumb,
+                  style: AppTextStyles.breadcrumb(context),
                 ),
                 const SizedBox(height: AppSpacing.s5),
                 Text(node.title, style: AppTextStyles.titleLarge),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   node.description,
-                  style: AppTextStyles.bodySmallMuted,
+                  style: AppTextStyles.bodySmallMuted(context),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -316,7 +316,7 @@ class _SectionScreenState extends State<SectionScreen> {
                   ),
                 ]
               : [
-                  const BoxShadow(
+                  BoxShadow(
                     color: AppColors.borderHighlightDim,
                     blurRadius: 3,
                     offset: Offset(-1, -1),
@@ -419,7 +419,7 @@ class _SectionScreenState extends State<SectionScreen> {
         ? const Icon(Icons.check_rounded,
             color: Colors.white, size: AppSpacing.icon18)
         : isLocked
-            ? const Icon(Icons.lock_outline,
+            ? Icon(Icons.lock_outline,
                 color: AppColors.textDimmed, size: AppSpacing.iconXs)
             : Text(
                 '${index + 1}',

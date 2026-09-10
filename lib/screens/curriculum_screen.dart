@@ -116,7 +116,7 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
               color: Colors.black.withValues(alpha: 0.55),
               blurRadius: AppSpacing.s12,
               offset: const Offset(0, 5)),
-          const BoxShadow(
+          BoxShadow(
               color: AppColors.borderHighlightDim,
               blurRadius: AppSpacing.xs,
               offset: Offset(-1, -1)),
@@ -164,7 +164,7 @@ class _CurriculumCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.s14),
         padding: const EdgeInsets.all(AppSpacing.s18),
-        decoration: card3D(
+        decoration: card3D(context, 
           border: Border.all(
             color: isActive ? AppColors.blue : Colors.transparent,
             width: 1.5,
@@ -201,7 +201,7 @@ class _CurriculumCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: const Text(
+                          child: Text(
                             '진행 중',
                             style: TextStyle(
                               fontSize: 11,
@@ -215,21 +215,21 @@ class _CurriculumCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s6),
                   Text(
                     curriculum.description,
-                    style: AppTextStyles.bodySmallMuted,
+                    style: AppTextStyles.bodySmallMuted(context),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppSpacing.s10),
                   Text(
                     '섹션 ${curriculum.nodes.length}개',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 12, color: AppColors.blue400),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            const Icon(Icons.chevron_right, color: AppColors.textDimmed),
+            Icon(Icons.chevron_right, color: AppColors.textDimmed),
           ],
         ),
       ),
@@ -370,7 +370,7 @@ class _CurriculumDetailViewState extends State<_CurriculumDetailView> {
               color: Colors.black.withValues(alpha: 0.55),
               blurRadius: AppSpacing.s12,
               offset: const Offset(0, 5)),
-          const BoxShadow(
+          BoxShadow(
               color: AppColors.borderHighlightDim,
               blurRadius: AppSpacing.xs,
               offset: Offset(-1, -1)),
@@ -398,7 +398,7 @@ class _CurriculumDetailViewState extends State<_CurriculumDetailView> {
                 ),
               ),
               if (!widget.isActive)
-                raised3DButton(
+                raised3DButton(context: context, 
                   onTap: widget.onStart,
                   shadowColor: AppColors.blue900,
                   faceColor: AppColors.blue600,
@@ -419,7 +419,7 @@ class _CurriculumDetailViewState extends State<_CurriculumDetailView> {
             padding: const EdgeInsets.only(left: AppSpacing.s40),
             child: Text(
               widget.curriculum.description,
-              style: AppTextStyles.bodySmallMuted,
+              style: AppTextStyles.bodySmallMuted(context),
             ),
           ),
           const SizedBox(height: AppSpacing.s10),
@@ -459,7 +459,7 @@ class _CurriculumDetailViewState extends State<_CurriculumDetailView> {
           ),
         ),
         const SizedBox(width: AppSpacing.xs),
-        Text(label, style: AppTextStyles.captionSmallMuted),
+        Text(label, style: AppTextStyles.captionSmallMuted(context)),
       ],
     );
   }
@@ -529,7 +529,7 @@ class _NodeWidget extends StatelessWidget {
             fontWeight: FontWeight.bold),
       );
     } else {
-      innerWidget = const Icon(Icons.lock_outline,
+      innerWidget = Icon(Icons.lock_outline,
           color: AppColors.textDimmed, size: AppSpacing.iconMd);
     }
 

@@ -142,7 +142,7 @@ class _StageLoadingOverlayState extends State<_StageLoadingOverlay>
               const SizedBox(height: AppSpacing.s6),
               Text(
                 widget.subtitle!,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 13,
                 ),
@@ -154,7 +154,7 @@ class _StageLoadingOverlayState extends State<_StageLoadingOverlay>
               width: 100,
               child: LinearProgressIndicator(
                 backgroundColor: AppColors.surfaceElevated,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.blue400),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.blue400),
                 minHeight: AppSpacing.s3,
               ),
             ),
