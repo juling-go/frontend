@@ -1,3 +1,9 @@
+# Flutter platform ephemeral (auto-generated, should not be committed)
+**/windows/flutter/ephemeral/
+**/linux/flutter/ephemeral/
+**/macos/Flutter/ephemeral/
+**/ios/Flutter/ephemeral/
+
 # Miscellaneous
 *.class
 *.log
@@ -50,7 +56,6 @@ app.*.map.json
 .pub/
 build/
 coverage/
-lib/generated_plugin_registrant.dart
 # For library packages, don’t commit the pubspec.lock file.
 # Regenerating the pubspec.lock file lets you test your package against the latest compatible versions of its dependencies.
 # See https://dart.dev/guides/libraries/private-files#pubspeclock
