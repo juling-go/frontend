@@ -2,6 +2,7 @@
 
 두 가지 스킨(`AppSkin.neo` / `AppSkin.flat`)을 넣은 뒤, 이어서 시도해 볼 만한
 것들을 정리했다. 컴포넌트 구조는 [ui_components.md](./ui_components.md)에 있다.
+여기의 항목들을 **작업 단위로 세어 놓은 목록**은 [implementation-tasks.md](./implementation-tasks.md)에 있다 — 순서와 선행 조건은 그쪽이 갖는다.
 
 ---
 

@@ -1,6 +1,6 @@
 # UI 컴포넌트 명세
 
-이어서 무엇을 시도할지는 [design_roadmap.md](./design_roadmap.md)에 정리했다.
+이어서 무엇을 시도할지는 [design_roadmap.md](./design_roadmap.md)에, 무엇을 언제 할지는 [implementation-tasks.md](./implementation-tasks.md)에 정리했다.
 
 ## 화면 (Screens)
 
